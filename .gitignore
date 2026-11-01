@@ -1,0 +1,6 @@
+node_modules/
+temp/
+release/
+.env*
+!.env.example
+next-env.d.ts

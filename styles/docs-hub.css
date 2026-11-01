@@ -1,0 +1,16 @@
+.docs-hub { max-width: 1280px; margin-inline: auto; padding: 40px 32px 56px; }
+.docs-hub-directory { margin-top: 48px; }
+.docs-hub-directory > h2 { margin: 0 0 24px; font-size: 24px; font-weight: 600; letter-spacing: -.6px; }
+.docs-hub-directory-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+.docs-document-card { display: block; min-width: 0; min-height: 196px; padding: 26px; border: 1px solid var(--docs-line); border-radius: 16px; background: var(--docs-surface); color: var(--foreground); text-decoration: none; transition: border-color 180ms ease, background-color 180ms ease; }
+.docs-document-card-icons { display: flex; align-items: center; justify-content: space-between; margin-bottom: 26px; color: var(--docs-pink); }
+.docs-document-card-arrow { color: var(--docs-faint); transition: color 180ms ease, transform 180ms ease; }
+.docs-document-card h3 { margin: 0 0 10px; font-size: 18px; font-weight: 600; line-height: 1.5; }
+.docs-document-card p { margin: 0; color: var(--muted-foreground); font-size: 14px; line-height: 1.8; overflow-wrap: anywhere; }
+.docs-document-card:is(:hover, :focus-visible) { border-color: color-mix(in srgb, var(--docs-pink) 55%, var(--docs-line)); background: color-mix(in srgb, var(--docs-pink-soft) 60%, var(--background)); }
+.docs-document-card:is(:hover, :focus-visible) .docs-document-card-arrow { color: var(--docs-pink); transform: translateX(3px); }
+.docs-document-card:focus-visible { outline: 2px solid var(--docs-pink); outline-offset: 4px; }
+@media (max-width: 1023px) { .docs-hub-directory-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 639px) { .docs-hub-directory { margin-top: 32px; } .docs-hub-directory > h2 { font-size: 22px; } .docs-hub-directory-grid { grid-template-columns: minmax(0, 1fr); } .docs-document-card { padding: 24px; } }
+@media (prefers-reduced-motion: reduce) { .docs-document-card, .docs-document-card-arrow { transition: none; } .docs-document-card:is(:hover, :focus-visible) .docs-document-card-arrow { transform: none; } }
+@media (max-width: 767px) { .docs-hub { padding: 28px 22px 40px; } }
