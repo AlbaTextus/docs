@@ -1,0 +1,40 @@
+@font-face { font-family: "Timeline Reference Mono"; src: url("/cf-reference/mono-regular.woff2") format("woff2"); font-display: swap; }
+
+.frame { --timeline-accent: #71849b; position: relative; width: 100%; max-width: 544px; height: 160px; margin: 0; border: 1px solid #f0f0f0; border-radius: 4px; background: #fff; color: var(--timeline-accent); font: 12px/1.4 "Timeline Reference Mono", monospace; color-scheme: light; }
+.frame *, .frame *::before, .frame *::after { box-sizing: border-box; }
+.track { position: absolute; top: 49px; left: 48px; right: 44px; display: flex; gap: 3px; height: 62px; }
+.segment { position: relative; min-width: 0; flex-basis: 0; }
+.bar { position: relative; height: 100%; border: 0; border-radius: 3px; background: transparent; }
+.segment[data-kind="free"] .bar { background: transparent; }
+.pattern { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center; overflow: hidden; }
+.marquee { display: flex; flex-shrink: 0; width: max-content; height: 24px; animation: timeline-scroll var(--scroll-duration) linear infinite; }
+.marquee:nth-child(2) { animation-direction: reverse; }
+.repeat { display: flex; flex-shrink: 0; align-items: center; }
+.repeat > span { display: grid; place-items: center; width: 40px; transform: rotate(-30deg); color: #aab6c4; }
+.repeat svg { display: block; width: 18px; height: 18px; }
+.chapterSlot { position: relative; height: 24px; }
+.chapterSlot::before { content: ""; position: absolute; width: 20px; height: 22px; border: 1px dashed #e5eaf0; border-radius: 3px; }
+.chapterIcon { position: relative; animation: chapter-insert 10s linear infinite; animation-delay: var(--insert-delay); }
+@keyframes chapter-insert {
+  0%, 8% { opacity: 0; transform: translateY(-22px) scale(.8); color: var(--timeline-accent); }
+  16% { opacity: 1; transform: translateY(2px) scale(1.06); color: var(--timeline-accent); }
+  20%, 30% { opacity: 1; transform: translateY(0) scale(1); color: var(--timeline-accent); }
+  42%, 94% { opacity: 1; transform: translateY(0) scale(1); color: #aab6c4; }
+  100% { opacity: 0; transform: translateY(0) scale(1); color: #aab6c4; }
+}
+.handle { position: absolute; width: 8px; height: 8px; border: 1px solid #ededed; border-radius: 2px; background: #fff; }
+.handle[data-corner="tl"] { top: -4px; left: -4px; }
+.handle[data-corner="tr"] { top: -4px; right: -4px; }
+.handle[data-corner="bl"] { bottom: -4px; left: -4px; }
+.handle[data-corner="br"] { bottom: -4px; right: -4px; }
+.pause { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+.pause:focus-visible { z-index: 2; top: 8px; right: 8px; width: auto; height: auto; padding: 4px 8px; clip-path: none; border: 1px solid currentColor; border-radius: 4px; background: #fff; color: #536a84; }
+.frame[data-paused="true"] :is(.marquee, .chapterIcon) { animation-play-state: paused; }
+@keyframes timeline-scroll { to { transform: translateX(-50%); } }
+@media (max-width: 480px) { .track { left: 22px; right: 22px; } }
+@media (prefers-reduced-motion: reduce) { .marquee, .chapterIcon { animation: none; } }
+
+.chapterSlot[data-wall-entry="true"] .chapterIcon { animation: none; opacity: 0; }
+.chapterSlot[data-arrived="true"] .chapterIcon { animation: wall-arrive 1.4s ease both; }
+@keyframes wall-arrive { from { opacity: 1; color: #268060; transform: scale(1.15); } to { opacity: 1; color: #aab6c4; transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) { .chapterSlot[data-arrived="true"] .chapterIcon { animation: none; opacity: 1; } }

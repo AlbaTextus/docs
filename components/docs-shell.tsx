@@ -76,6 +76,7 @@ export function DocsShell({ children }: { children: React.ReactNode }) {
     window.addEventListener("keydown", handler)
     return () => window.removeEventListener("keydown", handler)
   }, [])
+  if (pathname === "/preview/execution-timeline") return <>{children}</>
   return <LinkProvider component={AppLink}>
     <a className="docs-skip" href="#doc-content">跳转到文档内容</a>
     <Sidebar.Provider defaultOpen peekable className={`docs-shell${isHome ? " docs-shell-home" : ""}`} style={{ "--sidebar-width": "280px" } as React.CSSProperties}>

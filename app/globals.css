@@ -3,6 +3,8 @@
 @import "../styles/network-diagram.css";
 @import "../styles/docs-hub.css";
 @import "../styles/docs-hero.css";
+@import "../styles/oauth-flow.css";
+@import "../styles/athub-reference.css";
 @source "../node_modules/@cloudflare/kumo/dist";
 
 :root {
@@ -49,6 +51,7 @@ button:focus-visible, a:focus-visible, summary:focus-visible, input:focus-visibl
 .docs-skip { position: fixed; top: -60px; left: 20px; z-index: 100; padding: 12px 20px; border-radius: 8px; background: var(--foreground); color: var(--background); }
 .docs-skip:focus { top: 12px; }
 .docs-shell { --sidebar-bg: var(--docs-surface); --sidebar-active-bg: var(--docs-accent-soft); align-items: flex-start; min-height: 100dvh; }
+.docs-shell-home { zoom: .75; min-height: calc(100dvh / .75); }
 .docs-body { min-width: 0; flex: 1; container: docs-pane / inline-size; }
 .docs-sidebar[data-sidebar="sidebar"] { --sidebar-bg: var(--background); --sidebar-active-bg: color-mix(in srgb, var(--foreground) 5%, var(--background)); position: sticky; top: 0; height: 100dvh; z-index: 40; color: var(--foreground); font-family: var(--atui-font-system); }
 .docs-sidebar [data-sidebar="content-container"] { background: var(--sidebar-bg); border-color: var(--docs-line); }

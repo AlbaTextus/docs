@@ -1,7 +1,7 @@
 "use client"
 
-import { useId, useRef } from "react"
-import { motion, useInView, useReducedMotion, useScroll, useSpring, useTransform, type MotionValue } from "framer-motion"
+import { useEffect, useId, useRef } from "react"
+import { motion, useInView, useMotionValue, useReducedMotion, useSpring, useTransform, type MotionValue } from "framer-motion"
 
 const glyphs = {
   A: { width: 116, path: "M0 138 46 0H70L116 138H90L80 108H36L26 138ZM43 86H73L58 40Z" },
@@ -64,8 +64,35 @@ export function BrandCard() {
   const ref = useRef<HTMLElement>(null)
   const reduced = Boolean(useReducedMotion())
   const visible = useInView(ref, { amount: .05 })
-  // Finish at the viewport bottom so the last letter is reachable at the page end.
-  const { scrollYProgress } = useScroll({ target: ref, offset: ["start end", "end end"] })
+  const scrollYProgress = useMotionValue(0)
+  useEffect(() => {
+    const element = ref.current
+    if (!element) return
+    let frame = 0
+    function update() {
+      frame = 0
+      if (!element) return
+      // Viewport bounds include CSS zoom; layout offsets do not.
+      const bounds = element.getBoundingClientRect()
+      const height = document.documentElement.clientHeight
+      scrollYProgress.set(bounds.height > 0 ? Math.max(0, Math.min(1, (height - bounds.top) / bounds.height)) : 0)
+    }
+    function schedule() {
+      if (!frame) frame = requestAnimationFrame(update)
+    }
+    const observer = new ResizeObserver(schedule)
+    observer.observe(element)
+    observer.observe(document.body)
+    window.addEventListener("scroll", schedule, { passive: true })
+    window.addEventListener("resize", schedule)
+    update()
+    return () => {
+      cancelAnimationFrame(frame)
+      observer.disconnect()
+      window.removeEventListener("scroll", schedule)
+      window.removeEventListener("resize", schedule)
+    }
+  }, [scrollYProgress])
   const progress = useSpring(scrollYProgress, { stiffness: 70, damping: 24, restDelta: .001 })
 
   return <section ref={ref} className="brand-constellation" aria-labelledby={titleId} data-in-view={visible}>
