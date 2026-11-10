@@ -36,18 +36,17 @@ function ScanBoxIcon() {
 }
 
 const requestExamples = [
-  { method: "GET", path: "/toc", status: 200 },
-  { method: "POST", path: "/upload", status: 201 },
-  { method: "GET", path: "/content", status: 401 },
-  // Illustrative unavailable-service response, not a live ATHub health check.
-  { method: "GET", path: "/stats", status: 503 },
-  { method: "GET", path: "/platforms", status: 200 },
-  { method: "POST", path: "/authors", status: 201 },
-  { method: "GET", path: "/novelinfo", status: 404 },
-  { method: "PUT", path: "/volumes", status: 200 },
-  { method: "PUT", path: "/content", status: 400 },
-  { method: "POST", path: "/novelinfo", status: 201 },
-  { method: "DELETE", path: "/content", status: 204 },
+  { method: "GET", path: "/api/v2/toc", status: 200 },
+  { method: "POST", path: "/api/v2/upload", status: 201 },
+  { method: "GET", path: "/api/v2/content", status: 401 },
+  { method: "GET", path: "/api/v2/volumes", status: 500 },
+  { method: "GET", path: "/api/v2/platforms", status: 200 },
+  { method: "POST", path: "/api/v2/authors", status: 201 },
+  { method: "GET", path: "/api/v2/novelinfo", status: 404 },
+  { method: "PUT", path: "/api/v2/volumes", status: 200 },
+  { method: "PUT", path: "/api/v2/content", status: 400 },
+  { method: "POST", path: "/api/v2/novelinfo", status: 201 },
+  { method: "DELETE", path: "/api/v2/content", status: 204 },
 ]
 
 const responseExamples = [
@@ -167,7 +166,7 @@ function ResponsePanel({ tick }: { tick: number }) {
     ? ["Content-Type", "application/json"]
     : ["Content-Length", String(new TextEncoder().encode(response).length)]
 
-  return <div className="cf-response-stage" role="group" aria-label="GET /platforms 的 200 响应示例，非实时数据">
+  return <div className="cf-response-stage" role="group" aria-label="GET /api/v2/platforms 的 200 响应示例，非实时数据">
     <div className="cf-response-card">
     <div className="cf-response-heading"><span className="cf-agent-count"><i />响应数据</span><span className="cf-request-status" data-kind="success">200</span></div>
     <pre key={generation}><code>{response.split("\n").map((line, lineIndex, lines) => <span className="cf-response-line" key={lineIndex} style={{ "--line-index": lineIndex } as CSSProperties}>{line.split(/("(?:\\.|[^"\\])*"\s*:|"(?:\\.|[^"\\])*"|\b\d+\b)/g).map((token, index) => <span key={index} className={token.endsWith(":") ? "cf-code-url" : token.startsWith('"') ? "cf-code-string" : /^\d+$/.test(token) ? "cf-code-option" : "cf-code-punctuation"}>{token}</span>)}{lineIndex < lines.length - 1 ? "\n" : ""}</span>)}</code></pre>
@@ -200,7 +199,7 @@ function AgentPanel({ tick }: { tick: number }) {
     </div>
     <div className="cf-agent-band"><span /></div>
     <div className="cf-agent-terminal">
-      <div className="cf-terminal-prompt"><span>&gt;</span><code><span className="cf-code-command">curl</span>{" "}<span className="cf-code-url">{ATHUB_API_URL}/platforms</span>{" "}<span className="cf-code-punctuation">{"\\"}</span>{"\n  "}<span className="cf-code-option">-H</span>{" "}<span className="cf-code-string">{'"Authorization: Bearer '}<span className="cf-code-variable">$API_TOKEN</span>{'"'}</span><i /></code></div>
+      <div className="cf-terminal-prompt"><span>&gt;</span><code><span className="cf-code-command">curl</span>{" "}<span className="cf-code-url">{ATHUB_API_URL}/api/v2/platforms</span>{" "}<span className="cf-code-punctuation">{"\\"}</span>{"\n  "}<span className="cf-code-option">-H</span>{" "}<span className="cf-code-string">{'"Authorization: Bearer '}<span className="cf-code-variable">$ATHUB_API_TOKEN</span>{'"'}</span><i /></code></div>
       <span className="cf-terminal-enter">Enter<span><CornerDownLeft size={16} /></span></span>
     </div>
   </div>

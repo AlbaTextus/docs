@@ -1,24 +1,48 @@
 # ATHub API 文档
 
-版本日期：2026-11-01。本文覆盖 Go 服务全部公开 API，包括获取、上传、覆盖和删除。
+版本日期：2026-11-10。本文覆盖 Go 服务全部公开内容 API，包括获取、上传、覆盖和删除。
 
 ## 1. 地址、鉴权与通用约定
 
-- 请求直接发送到 ATHub **Go 服务**。
+- 请求发送到统一 **Go 程序**中的 ATHub 内容模块；账户功能使用 `8001` 端口的 `/api/v1/*`，内容功能使用 `8003` 端口的 `/api/v2/*`。
 - 对外服务地址：`https://api.albatextus.com`。本文全部调用示例使用此 HTTPS 地址。
-- 自托管时，默认监听 `http://127.0.0.1:8080`，由服务端 `HTTP_ADDR` 决定；与 OAuth 同机运行时可改为 `http://127.0.0.1:8090`，避免端口冲突。
-- 路径不带 `/api` 前缀，不接受末尾 `/`，例如使用 `/upload` 而不是 `/api/upload/`。
+- 自托管时，内容接口默认监听 `http://127.0.0.1:8003`，由服务端 `ATHUB_HTTP_ADDR` 决定。
+- 所有内容路径统一带 `/api/v2/` 前缀，不接受末尾 `/`，例如使用 `/api/v2/upload`，没有 `/athub` 中间路径。旧 `/api/upload`、`/upload` 和末尾带 `/` 的路径不再兼容。
 - 生产环境使用 HTTPS。接口面向服务端或采集程序，不提供浏览器跨域 CORS 支持。
 
 ### 请求头
 
 | 键 | 必填 | 值 |
 | --- | --- | --- |
-| `Authorization` | 所有请求必填 | `Bearer <API_TOKEN>`，使用 Go 服务配置的服务密钥，不是 OAuth access token。 |
+| `Authorization` | 所有请求必填 | `Bearer <API_KEY>`，唯一有效凭据为登录用户在账户接口创建的 ATHub 个人 API Key。 |
 | `Content-Type` | 有 JSON 请求体的 POST/PUT 必填 | `application/json`，也接受 `application/json; charset=utf-8`。 |
 | `Accept` | 可选 | 推荐 `application/json`。 |
 
-服务密钥具有全库读写权限，不要放进网页、客户端公开包或日志。
+个人 Key 用于标识调用用户，目前拥有共享内容库的读写权限，不按用户隔离小说。
+不要放进网页、客户端公开包或日志。原全局服务密钥、旧版个人密钥、OAuth access token、
+Cookie 和用户身份请求头均不能替代新 Key。撤销、过期或用户停用后，调用返回 `401`。
+
+账户功能在 `8001` 提供以下接口，要求账户登录会话；写操作还需
+`X-AlbaTextus-Client: account-center`，不接受跨站请求。通过前端同源入口访问时可使用相同路径。
+
+| 方法 | 账户接口 | 作用 |
+| --- | --- | --- |
+| POST | `/api/v1/account/key` | 提交 `{"name":"采集任务"}` 生成 Key，可选 `expires_at`（未来的 RFC 3339 时间）。 |
+| GET | `/api/v1/account/key` | 列出自己的 Key、前缀、有效期、撤销状态、最后调用时间和调用次数，不返回明文或哈希。 |
+| DELETE | `/api/v1/account/key/{id}` | 撤销自己的 Key，保留历史调用记录。 |
+| GET | `/api/v1/account/athub/usage` | 自己的总次数、成功/失败/待完成次数，按方法、接口、端口和状态码分组统计。 |
+| GET | `/api/v1/account/athub/calls?limit=50&offset=0` | 自己的调用明细，`limit` 为 1–100，`offset` 为 0–1000000。 |
+
+创建返回 `201`，结构为 `{"key":{...},"api_key":"ath_..."}`；明文只返回一次。
+每个用户最多保留 20 个未撤销且未过期的 Key，达到上限返回 `409`。
+鉴权表和调用表放在账户数据库；内容数据库只保存平台、作者和小说内容。
+内容请求先写入待完成记录，再执行业务并补全状态码、耗时、响应字节数。
+记录包括正常请求和可归属用户的失败请求；未知 Key 的失败请求以匿名记录保存。
+健康检查和账户管理请求不计入内容调用次数。不记录密钥、请求头、查询字符串或小说正文；
+未知接口以 `/api/v2/{unknown}` 归类，防止记录敏感路径和无限扩张的统计项。
+账户数据库不可用、无法校验 Key 或无法开始调用记录时，内容接口返回 `503`，不执行业务。
+程序中断或记录完成失败时保留 `status=null` 的待完成记录，不把它计作成功。
+
 除鉴权外，没有额外签名字段。GET/DELETE 参数放在 URL 查询字符串；POST/PUT 数据放在 JSON 请求体。
 
 ### 编码、类型和限制
@@ -28,7 +52,7 @@
 | 请求体 | 一个 UTF-8 JSON 对象，无 BOM。拒绝顶层数组、`null`、多段 JSON 和未知字段。 |
 | 文件上传 | 将 `.json` 文件内容作为整个 HTTP 请求体发送，不使用 `multipart/form-data`。 |
 | 大小上限 | 每个请求体最多 **8 MiB = 8,388,608 字节**，包含 JSON 结构、转义字符等。 |
-| 单批上传 | `/upload` 最多 200 个卷、1000 个章节，还须满足 8 MiB 限制。超过时分批发送。 |
+| 单批上传 | `/api/v2/upload` 最多 200 个卷、1000 个章节，还须满足 8 MiB 限制。超过时分批发送。 |
 | ID、排序 | JSON number，必须是 `1` 至 `2147483647` 的整数；不能用数字字符串或小数。可空 ID 另见字段表。 |
 | 时间 | 服务端生成，响应为 RFC 3339 时间字符串；示例使用 UTC。请求不能提交 `id`、`createdAt`、`updatedAt`。 |
 | 文本 | `title` 和平台 `name` 去除首尾空白后不能为空；所有存储文本都禁止 NUL 字符 `\u0000`。 |
@@ -43,7 +67,7 @@
 
 ### 通用分页参数
 
-分页列表接口采用下列字段，响应不含 `total`、`nextCursor` 或页码；`/toc` 为全量目录对象，不使用分页：
+分页列表接口采用下列字段，响应不含 `total`、`nextCursor` 或页码；`/api/v2/toc` 为全量目录对象，不使用分页：
 
 | 查询键 | 类型 | 必填 | 默认 | 说明 |
 | --- | --- | --- | --- | --- |
@@ -57,32 +81,31 @@
 
 | 方法 | 路径 | 用途 | 成功状态 |
 | --- | --- | --- | --- |
-| GET | `/platforms` | 获取平台列表或单个平台 | 200 |
-| POST | `/platforms` | 新建平台 | 201 |
-| GET | `/authors` | 获取作者列表或单个作者 | 200 |
-| POST | `/authors` | 新建作者标识 | 201 |
-| GET | `/novelinfo` | 获取小说列表或小说元信息 | 200 |
-| POST | `/novelinfo` | 新建小说，仅元信息 | 201 |
-| PUT | `/novelinfo?id=...` | 完整覆盖小说元信息 | 200 |
-| DELETE | `/novelinfo?id=...` | 删除小说及全部卷、章节 | 204 |
-| GET | `/volumes` | 获取卷列表或一个卷 | 200 |
-| PUT | `/volumes` | 上传一个卷，不存在则新增、存在则覆盖卷名 | 200 |
-| DELETE | `/volumes?novelId=...&order=...` | 删除空卷 | 204 |
-| GET | `/toc?novelId=...` | 一次获取全书卷与章节目录，不含正文 | 200 |
-| GET | `/content` | 获取章节列表或一个章节，包含正文 | 200 |
-| PUT | `/content` | 上传一个章节，不存在则新增、存在则覆盖 | 200 |
-| DELETE | `/content?novelId=...&order=...` | 删除一个章节 | 204 |
-| POST | `/upload` | 一次创建小说并导入卷/章节，或给已有小说批量续传 | 201 / 200 |
-| GET | `/stats` | 获取所有平台的统计与汇总 | 200 |
+| GET | `/api/v2/platforms` | 获取平台列表或单个平台 | 200 |
+| POST | `/api/v2/platforms` | 新建平台 | 201 |
+| GET | `/api/v2/authors` | 获取作者列表或单个作者 | 200 |
+| POST | `/api/v2/authors` | 新建作者标识 | 201 |
+| GET | `/api/v2/novelinfo` | 获取小说列表或小说元信息 | 200 |
+| POST | `/api/v2/novelinfo` | 新建小说，仅元信息 | 201 |
+| PUT | `/api/v2/novelinfo?id=...` | 完整覆盖小说元信息 | 200 |
+| DELETE | `/api/v2/novelinfo?id=...` | 删除小说及全部卷、章节 | 204 |
+| GET | `/api/v2/volumes` | 获取卷列表或一个卷 | 200 |
+| PUT | `/api/v2/volumes` | 上传一个卷，不存在则新增、存在则覆盖卷名 | 200 |
+| DELETE | `/api/v2/volumes?novelId=...&order=...` | 删除空卷 | 204 |
+| GET | `/api/v2/toc?novelId=...` | 一次获取全书卷与章节目录，不含正文 | 200 |
+| GET | `/api/v2/content` | 获取章节列表或一个章节，包含正文 | 200 |
+| PUT | `/api/v2/content` | 上传一个章节，不存在则新增、存在则覆盖 | 200 |
+| DELETE | `/api/v2/content?novelId=...&order=...` | 删除一个章节 | 204 |
+| POST | `/api/v2/upload` | 一次创建小说并导入卷/章节，或给已有小说批量续传 | 201 / 200 |
 
-POST 不带查询参数；`PUT /volumes`、`PUT /content` 也不带查询参数。
+POST 不带查询参数；`PUT /api/v2/volumes`、`PUT /api/v2/content` 也不带查询参数。
 不支持 PATCH。平台和作者目前只提供获取与创建，没有修改/删除接口。
 
 ## 3. 平台
 
-### 3.1 获取：GET /platforms
+### 3.1 获取：GET /api/v2/platforms
 
-获取单个：`GET /platforms?id=1`。
+获取单个：`GET /api/v2/platforms?id=1`。
 
 | 查询键 | 类型 | 必填 | 说明 |
 | --- | --- | --- | --- |
@@ -90,9 +113,9 @@ POST 不带查询参数；`PUT /volumes`、`PUT /content` 也不带查询参数�
 | `limit` | integer | 否 | 仅列表模式，通用分页。 |
 | `offset` | integer | 否 | 仅列表模式，通用分页。 |
 
-列表示例：`GET /platforms?limit=20&offset=0`，按 ID 升序。
+列表示例：`GET /api/v2/platforms?limit=20&offset=0`，按 ID 升序。
 
-### 3.2 创建：POST /platforms
+### 3.2 创建：POST /api/v2/platforms
 
 请求：
 
@@ -108,7 +131,7 @@ POST 不带查询参数；`PUT /volumes`、`PUT /content` 也不带查询参数�
 | `name` | string | 是 | 去除首尾空白后不能为空。 |
 | `url` | string / null | 否 | 省略或 null 保存为 null；作为文本保存，不做网络请求或 URL 有效性核验。 |
 
-`201` 响应，同时返回 `Location: /platforms?id=1`：
+`201` 响应，同时返回 `Location: /api/v2/platforms?id=1`：
 
 ```json
 {
@@ -124,7 +147,7 @@ GET 单条返回相同结构，GET 列表返回这些对象组成的数组。
 
 ## 4. 作者
 
-### 4.1 获取：GET /authors
+### 4.1 获取：GET /api/v2/authors
 
 | 查询键 | 类型 | 必填 | 说明 |
 | --- | --- | --- | --- |
@@ -133,10 +156,10 @@ GET 单条返回相同结构，GET 列表返回这些对象组成的数组。
 | `limit` | integer | 否 | 仅列表模式，通用分页。 |
 | `offset` | integer | 否 | 仅列表模式，通用分页。 |
 
-示例：`GET /authors?id=2` 或 `GET /authors?platformId=1&limit=20&offset=0`。
+示例：`GET /api/v2/authors?id=2` 或 `GET /api/v2/authors?platformId=1&limit=20&offset=0`。
 列表按 ID 升序。
 
-### 4.2 创建：POST /authors
+### 4.2 创建：POST /api/v2/authors
 
 ```json
 {
@@ -147,7 +170,7 @@ GET 单条返回相同结构，GET 列表返回这些对象组成的数组。
 唯一请求键 `platformId` 为必填 integer，必须引用已存在的平台，否则返回 400。
 当前作者表没有姓名、来源作者 ID 等字段；不要提交 `name`、`authorName` 等额外键。
 
-`201` 响应，同时返回 `Location: /authors?id=2`：
+`201` 响应，同时返回 `Location: /api/v2/authors?id=2`：
 
 ```json
 {
@@ -161,10 +184,10 @@ GET 单条结构相同，GET 列表为此类对象的数组。重复 POST 会创
 
 ## 5. 小说元信息
 
-### 5.1 获取：GET /novelinfo
+### 5.1 获取：GET /api/v2/novelinfo
 
-获取单本：`GET /novelinfo?id=10`。
-获取列表：`GET /novelinfo?platformId=1&authorId=2&limit=20&offset=0`。
+获取单本：`GET /api/v2/novelinfo?id=10`。
+获取列表：`GET /api/v2/novelinfo?platformId=1&authorId=2&limit=20&offset=0`。
 
 | 查询键 | 类型 | 必填 | 说明 |
 | --- | --- | --- | --- |
@@ -175,9 +198,9 @@ GET 单条结构相同，GET 列表为此类对象的数组。重复 POST 会创
 | `offset` | integer | 否 | 仅列表模式，通用分页。 |
 
 列表按小说 ID 降序；筛选无结果时返回 `[]`。
-元信息不嵌套卷或章节，分别使用 `/volumes` 和 `/content` 获取。
+元信息不嵌套卷或章节，分别使用 `/api/v2/volumes` 和 `/api/v2/content` 获取。
 
-### 5.2 创建：POST /novelinfo
+### 5.2 创建：POST /api/v2/novelinfo
 
 ```json
 {
@@ -190,13 +213,13 @@ GET 单条结构相同，GET 列表为此类对象的数组。重复 POST 会创
 }
 ```
 
-### 5.3 覆盖：PUT /novelinfo?id=10
+### 5.3 覆盖：PUT /api/v2/novelinfo?id=10
 
 URL 只允许必填查询键 `id`。请求体与 POST 完全相同。
 这是**完整替换而非局部更新**，省略可空字段会清空，省略状态会恢复为 `ONGOING`。
 不存在返回 404。
 
-### 5.4 小说写入字段：POST、PUT 及 /upload.novel 共用
+### 5.4 小说写入字段：POST、PUT 及 /api/v2/upload.novel 共用
 
 | 请求键 | 类型 | 必填 | 默认/约束 |
 | --- | --- | --- | --- |
@@ -207,7 +230,7 @@ URL 只允许必填查询键 `id`。请求体与 POST 完全相同。
 | `coverUrl` | string / null | 否 | 省略/null 保存为 null；不验证或下载图片。 |
 | `status` | string | 否 | `ONGOING` 连载中或 `COMPLETED` 已完结，区分大小写。省略/null/空字符串按 `ONGOING`。 |
 
-POST 成功返回 `201` 和 `Location: /novelinfo?id=10`；PUT 成功返回 `200`。
+POST 成功返回 `201` 和 `Location: /api/v2/novelinfo?id=10`；PUT 成功返回 `200`。
 两者以及 GET 单条的响应结构：
 
 ```json
@@ -227,14 +250,14 @@ POST 成功返回 `201` 和 `Location: /novelinfo?id=10`；PUT 成功返回 `200
 `id`、`createdAt`、`updatedAt` 为只读生成字段；其余键定义与写入字段表相同。
 可空字段即使为 null 也会返回。GET 列表为上述对象组成的数组。
 
-### 5.5 删除：DELETE /novelinfo?id=10
+### 5.5 删除：DELETE /api/v2/novelinfo?id=10
 
 只接受必填 `id` 查询键，无请求体。成功返回 `204`；不存在返回 404。
 **永久删除这部小说及全部卷、章节**，不会删除平台或作者。
 
 ## 6. 卷
 
-### 6.1 获取：GET /volumes
+### 6.1 获取：GET /api/v2/volumes
 
 | 查询键 | 类型 | 必填 | 说明 |
 | --- | --- | --- | --- |
@@ -243,11 +266,11 @@ POST 成功返回 `201` 和 `Location: /novelinfo?id=10`；PUT 成功返回 `200
 | `limit` | integer | 否 | 仅列表模式，通用分页。 |
 | `offset` | integer | 否 | 仅列表模式，通用分页。 |
 
-示例：`GET /volumes?novelId=10&order=1`，或 `GET /volumes?novelId=10&limit=20&offset=0`。
+示例：`GET /api/v2/volumes?novelId=10&order=1`，或 `GET /api/v2/volumes?novelId=10&limit=20&offset=0`。
 列表按 `order` 升序。小说存在但无卷/该页为空时返回 `[]`，小说不存在返回 404。
 单条模式下卷不存在也返回 404。卷响应不包含章节正文或章节计数。
 
-### 6.2 上传一个卷：PUT /volumes
+### 6.2 上传一个卷：PUT /api/v2/volumes
 
 不带查询参数：
 
@@ -285,15 +308,15 @@ PUT 和 GET 单条响应：
 `createdAt`、`updatedAt` 为服务端时间，其他响应键与请求字段相同。
 GET 列表为上述对象的数组。
 
-### 6.3 删除：DELETE /volumes?novelId=10&order=1
+### 6.3 删除：DELETE /api/v2/volumes?novelId=10&order=1
 
 只允许两个必填查询键 `novelId`、`order`，无请求体。
 成功返回 `204`，不存在返回 404。
-卷仍被章节引用时返回 `409`，不删除任何章节。先用 `/content` 或 `/upload` 将章节移出该卷，或先删除章节。
+卷仍被章节引用时返回 `409`，不删除任何章节。先用 `/api/v2/content` 或 `/api/v2/upload` 将章节移出该卷，或先删除章节。
 
 ## 7. 章节正文
 
-### 7.1 获取：GET /content
+### 7.1 获取：GET /api/v2/content
 
 | 查询键 | 类型 | 必填 | 说明 |
 | --- | --- | --- | --- |
@@ -302,13 +325,13 @@ GET 列表为上述对象的数组。
 | `limit` | integer | 否 | 仅列表模式，通用分页。 |
 | `offset` | integer | 否 | 仅列表模式，通用分页。 |
 
-示例：`GET /content?novelId=10&order=1`，或 `GET /content?novelId=10&limit=20&offset=0`。
+示例：`GET /api/v2/content?novelId=10&order=1`，或 `GET /api/v2/content?novelId=10&limit=20&offset=0`。
 列表按章节 `order` 升序，包含完整正文。小说存在但无章节/该页为空返回 `[]`；小说不存在返回 404。
 单条模式下章节不存在也返回 404。
 没有按卷筛选参数；客户端依据返回的 `volumeId` 分组。读取整本小说需逐页请求，不提供无上限全量正文路由。
-只需标题与分卷关系时，使用第 7.4 节的 `/toc`，避免传输正文。
+只需标题与分卷关系时，使用第 7.4 节的 `/api/v2/toc`，避免传输正文。
 
-### 7.2 上传一个章节：PUT /content
+### 7.2 上传一个章节：PUT /api/v2/content
 
 不带查询参数：
 
@@ -332,7 +355,7 @@ GET 列表为上述对象的数组。
 
 以 `(novelId, order)` 新增或覆盖，覆盖时保留章节 ID，替换标题、正文和卷关联。
 无论新增还是覆盖均返回 `200`。小说/卷不存在或卷属于其他小说返回 400。
-`POST /content` 不支持，单章上传使用 PUT；批量上传使用 `POST /upload`。
+`POST /api/v2/content` 不支持，单章上传使用 PUT；批量上传使用 `POST /api/v2/upload`。
 
 PUT 和 GET 单条响应：
 
@@ -351,12 +374,12 @@ PUT 和 GET 单条响应：
 `id` 是章节 ID，`updatedAt` 为服务端更新时间，其他键定义与请求字段相同。
 未分卷时 `volumeId` 为 null。GET 列表为这些对象组成的数组。
 
-### 7.3 删除：DELETE /content?novelId=10&order=1
+### 7.3 删除：DELETE /api/v2/content?novelId=10&order=1
 
 只允许两个必填查询键 `novelId`、`order`，无请求体。
 成功返回 `204`，小说或章节不存在返回 404。不重新编号其他章节，也不删除空卷。
 
-### 7.4 获取全书目录：GET /toc?novelId=10
+### 7.4 获取全书目录：GET /api/v2/toc?novelId=10
 
 只读接口，要求相同的 Bearer Token，无请求体。只接受一个必填查询键：
 
@@ -412,9 +435,9 @@ PUT 和 GET 单条响应：
 
 小说存在但没有卷或章节时，对应数组为 `[]`，不会返回 null；完全空书返回
 `{"novelId":10,"volumes":[],"chapters":[]}`。小说不存在返回 `404`。
-实际阅读时再用 `GET /content?novelId=10&order=2` 按需读取章节正文。
+实际阅读时再用 `GET /api/v2/content?novelId=10&order=2` 按需读取章节正文。
 
-## 8. 批量上传：POST /upload
+## 8. 批量上传：POST /api/v2/upload
 
 这是推荐的小说导入接口。上传前先取得平台 ID，可选取得作者 ID。
 每次请求只能选择以下一种模式：
@@ -489,7 +512,7 @@ PUT 和 GET 单条响应：
 ```
 
 续传只修改本批次列出的卷、章节，不清空其他数据，不修改小说元信息。
-要修改小说元信息，另行使用 `PUT /novelinfo?id=10`。
+要修改小说元信息，另行使用 `PUT /api/v2/novelinfo?id=10`。
 
 ### 8.3 顶层字段
 
@@ -525,7 +548,7 @@ PUT 和 GET 单条响应：
 
 ### 8.6 成功响应的所有键
 
-新建返回 `201`，同时带 `Location: /novelinfo?id=10`；续传返回 `200`。
+新建返回 `201`，同时带 `Location: /api/v2/novelinfo?id=10`；续传返回 `200`。
 
 ```json
 {
@@ -568,7 +591,7 @@ PUT 和 GET 单条响应：
 | --- | --- | --- |
 | `novel` | object | 完整小说元信息，所有键见第 5 节。 |
 | `volumes` | array | **本批次显式写入**的卷，结构见第 6 节，按请求数组顺序返回；未写卷时为 `[]`。仅被章节引用的旧卷不会额外出现在这里。 |
-| `chapters` | array | 本批次章节回执，按请求数组顺序返回；未写章节时为 `[]`。不重复返回正文，完整章节用 GET /content 获取。 |
+| `chapters` | array | 本批次章节回执，按请求数组顺序返回；未写章节时为 `[]`。不重复返回正文，完整章节用 GET /api/v2/content 获取。 |
 | `chapters[].id` | integer | 章节数据库 ID。 |
 | `chapters[].order` | integer | 全书章节序号。 |
 | `chapters[].volumeId` | integer / null | 解析后的数据库卷 ID，未分卷为 null。 |
@@ -587,48 +610,7 @@ PUT 和 GET 单条响应：
 - 上传卷/章节不刷新小说的 `updatedAt`，该字段仅反映小说元信息写入时间。
 - 多批之间不是同一个事务：某批失败不会撤销此前成功的批次。8 MiB/1000 章以内按需拆分，分批进度由客户端记录。
 
-## 9. 存储统计：GET /stats
-
-不接受查询参数，无请求体。返回 200：
-
-```json
-{
-  "platforms": [
-    {
-      "id": 1,
-      "name": "示例平台",
-      "novelCount": 3,
-      "chapterCount": 120,
-      "storageBytes": 345678
-    }
-  ],
-  "platformCount": 1,
-  "novelCount": 3,
-  "chapterCount": 120,
-  "storageBytes": 345678,
-  "updatedAt": "2026-10-29T04:00:00Z"
-}
-```
-
-| 响应键 | 类型 | 说明 |
-| --- | --- | --- |
-| `platforms` | array | 平台统计列表，按平台 ID 升序；包括没有小说的平台，完全无平台时为 `[]`。 |
-| `platforms[].id` | integer | 平台 ID。 |
-| `platforms[].name` | string | 平台名称。 |
-| `platforms[].novelCount` | integer | 该平台小说数。 |
-| `platforms[].chapterCount` | integer | 该平台章节数。 |
-| `platforms[].storageBytes` | integer | 该平台存储内容的 UTF-8 字节数。 |
-| `platformCount` | integer | 平台总数。 |
-| `novelCount` | integer | 所有平台小说总数。 |
-| `chapterCount` | integer | 所有平台章节总数。 |
-| `storageBytes` | integer | 所有平台内容字节数。 |
-| `updatedAt` | string | 本次统计生成时间，不是数据库最后修改时间。 |
-
-内容字节数包括小说标题、简介、封面链接、卷标题、章节标题和正文；
-不含平台名、平台网址、ID、时间戳、索引、数据库行头、空闲空间或 JSON 传输开销。
-不是磁盘文件大小。计数与字节数可能超过 32 位，客户端建议使用 64 位整数处理。
-
-## 10. 错误响应与状态码
+## 9. 错误响应与状态码
 
 所有错误的 JSON 结构只有一个键：
 
@@ -656,22 +638,22 @@ PUT 和 GET 单条响应：
 | 500 | 未预期服务或数据库错误，不返回数据库内部细节。 |
 | 504 | 数据库请求上下文超时。 |
 
-引用错误与目标不存在的区别：`PUT /content` 引用不存在的小说/卷是 400；
-`GET /content` 获取不存在的小说/章节是 404；`POST /upload` 用不存在的 `novelId` 续传是 404。
+引用错误与目标不存在的区别：`PUT /api/v2/content` 引用不存在的小说/卷是 400；
+`GET /api/v2/content` 获取不存在的小说/章节是 404；`POST /api/v2/upload` 用不存在的 `novelId` 续传是 404。
 
-## 11. 完整调用示例
+## 10. 完整调用示例
 
-以下示例要求 Go 服务已运行，`API_TOKEN` 已在调用端环境变量中设置。
+以下示例要求 Go 服务已运行，并将创建时返回的个人 Key 保存到调用端 `ATHUB_API_TOKEN` 环境变量中。它不是 Go 服务的全局配置。
 不要将真实密钥写进文档或提交到 Git。
 
-### 11.1 PowerShell：从零创建平台并上传
+### 10.1 PowerShell：从零创建平台并上传
 
 ```powershell
 $base = 'https://api.albatextus.com' # 自托管时改为实际 Go 服务地址
-$headers = @{ Authorization = "Bearer $env:API_TOKEN" }
+$headers = @{ Authorization = "Bearer $env:ATHUB_API_TOKEN" }
 
 $platformJson = @{ name = 'My platform'; url = $null } | ConvertTo-Json
-$platform = Invoke-RestMethod "$base/platforms" -Method Post -Headers $headers `
+$platform = Invoke-RestMethod "$base/api/v2/platforms" -Method Post -Headers $headers `
   -ContentType 'application/json; charset=utf-8' `
   -Body ([Text.Encoding]::UTF8.GetBytes($platformJson))
 
@@ -690,32 +672,32 @@ $upload = @{
   )
 } | ConvertTo-Json -Depth 10
 
-$result = Invoke-RestMethod "$base/upload" -Method Post -Headers $headers `
+$result = Invoke-RestMethod "$base/api/v2/upload" -Method Post -Headers $headers `
   -ContentType 'application/json; charset=utf-8' `
   -Body ([Text.Encoding]::UTF8.GetBytes($upload))
 
 $novelId = $result.novel.id
-Invoke-RestMethod "$base/novelinfo?id=$novelId" -Headers $headers
-Invoke-RestMethod "$base/volumes?novelId=$novelId" -Headers $headers
-Invoke-RestMethod "$base/toc?novelId=$novelId" -Headers $headers
-Invoke-RestMethod "$base/content?novelId=$novelId&order=1" -Headers $headers
+Invoke-RestMethod "$base/api/v2/novelinfo?id=$novelId" -Headers $headers
+Invoke-RestMethod "$base/api/v2/volumes?novelId=$novelId" -Headers $headers
+Invoke-RestMethod "$base/api/v2/toc?novelId=$novelId" -Headers $headers
+Invoke-RestMethod "$base/api/v2/content?novelId=$novelId&order=1" -Headers $headers
 ```
 
-### 11.2 上传 JSON 文件
+### 10.2 上传 JSON 文件
 
 把第 8.1 节 JSON 保存为 UTF-8 无 BOM 文件，替换真实平台/作者 ID。
-下面假设文件在 `temp/upload.json`。这只是请求格式示例，不会自动读取本机文件路径。
+下面假设文件在 `temp/api/v2/upload.json`。这只是请求格式示例，不会自动读取本机文件路径。
 
 ```powershell
-curl.exe --request POST 'https://api.albatextus.com/upload' `
-  --header "Authorization: Bearer $env:API_TOKEN" `
+curl.exe --request POST 'https://api.albatextus.com/api/v2/upload' `
+  --header "Authorization: Bearer $env:ATHUB_API_TOKEN" `
   --header 'Content-Type: application/json; charset=utf-8' `
-  --data-binary '@temp/upload.json'
+  --data-binary '@temp/api/v2/upload.json'
 ```
 
 不要使用 `-F file=@...`。接口接收 JSON 内容，不接受 `file`、`filePath`、`filename`、`encoding` 等额外字段。
 
-### 11.3 续传下一批
+### 10.3 续传下一批
 
 ```powershell
 $nextBatch = @{
@@ -725,20 +707,20 @@ $nextBatch = @{
   )
 } | ConvertTo-Json -Depth 10
 
-Invoke-RestMethod "$base/upload" -Method Post -Headers $headers `
+Invoke-RestMethod "$base/api/v2/upload" -Method Post -Headers $headers `
   -ContentType 'application/json; charset=utf-8' `
   -Body ([Text.Encoding]::UTF8.GetBytes($nextBatch))
 ```
 
 重发这个续传请求会覆盖同一本书的第 2 章，不会创建第二本小说或重复章节。
 
-### 11.4 分页获取全部章节
+### 10.4 分页获取全部章节
 
 ```powershell
 $limit = 100
 $offset = 0
 do {
-  $page = Invoke-RestMethod "$base/content?novelId=$novelId&limit=$limit&offset=$offset" -Headers $headers
+  $page = Invoke-RestMethod "$base/api/v2/content?novelId=$novelId&limit=$limit&offset=$offset" -Headers $headers
   foreach ($chapter in $page) {
     # 在这里消费 chapter.id / volumeId / order / title / content / updatedAt
     $chapter
