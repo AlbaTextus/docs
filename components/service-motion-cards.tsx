@@ -65,7 +65,7 @@ function ModuleFrame({ service, title, description, href, linkLabel, external, c
 
 function OAuthModule() {
   const playback = usePlayback(500)
-  return <ModuleFrame service="oauth" title="OAuth" description="统一登录与授权，只分享你明确允许的信息。" href="https://github.com/AlbaTextus/oauth" external linkLabel="查看 OAuth 源码（新窗口）" playback={playback}>
+  return <ModuleFrame service="oauth" title="OAuth" description="统一登录与授权，只分享你明确允许的信息。" href="https://github.com/AlbaTextus/atnexus" external linkLabel="查看 OAuth 源码（新窗口）" playback={playback}>
     <OAuthFlow playback={playback} />
   </ModuleFrame>
 }

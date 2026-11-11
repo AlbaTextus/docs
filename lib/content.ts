@@ -48,7 +48,7 @@ export function buildDocument(slug: string, source: string): Document | null {
   if (endpoint) {
     markdown = endpoint.sections.map(key => sections.get(key) ?? "").join("\n\n")
   } else if (slug === "overview") {
-    markdown = `ATHub 是 ALBATEXTUS 统一服务的 v2 内容模块。通过一套 REST API，管理平台、作者、小说、卷和章节。
+    markdown = `ATHub 是 ALBATEXTUS 统一服务的 v2 内容模块。通过一套 REST API，管理平台、作者、标签库、小说、卷和章节。
 
 ## 开始之前
 
