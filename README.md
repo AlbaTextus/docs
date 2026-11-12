@@ -21,6 +21,10 @@ npm run dev
 
 访问 http://127.0.0.1:3310；API 页面示例：http://127.0.0.1:3310/athub/upload。
 
+健康检查使用 `GET /healthz`，正常返回 HTTP `200` 和 `{"status":"ok"}`，
+响应禁止缓存。线上地址为 `https://docs.albatextus.com/healthz`，
+用于检查文档服务是否能处理请求；不检查外部 ATHub API。
+
 ## 技术与复用
 
 - Next.js 16、React 19、TypeScript strict、Tailwind CSS v4。
