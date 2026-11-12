@@ -1,5 +1,4 @@
-import { readFile } from "node:fs/promises"
-import path from "node:path"
+import { getContentSource } from "@/lib/content-source"
 import { ATHUB_API_URL } from "./api"
 import { endpoints, navigation, type Endpoint } from "./navigation"
 
@@ -14,7 +13,7 @@ export type Document = {
   response: string | null
 }
 
-export const sourcePath = () => path.resolve(process.cwd(), "content/athub/API.md")
+export { sourcePath } from "@/lib/content-source"
 export const headingId = (text: string) => text.replace(/^\d+(?:\.\d+)*\.?\s*/, "").replace(/[`*]/g, "").trim().replace(/[^\p{L}\p{N}]+/gu, "-").replace(/^-|-$/g, "").toLowerCase()
 
 export function splitSections(markdown: string) {
@@ -92,7 +91,7 @@ ${sections.get("2")}
 }
 
 export async function getDocument(slug: string) {
-  return buildDocument(slug, await readFile(sourcePath(), "utf8"))
+  return buildDocument(slug, await getContentSource())
 }
 
 export function getHeadings(markdown: string): Heading[] {

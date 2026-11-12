@@ -9,7 +9,7 @@ import { SiteFooter } from "@/components/ui/site-footer"
 import { SiteHeader, type NavigationItem } from "@/components/ui/site-header"
 import { IconButton } from "@/components/ui/icon-button"
 import { ThemeToggle } from "@/components/ui/theme-toggle"
-import { BookOpen, Braces, Database, FileCode2, FileQuestion, Github, House, KeyRound, Layers3, Library, PanelLeft, Search, Terminal, Upload, Users } from "lucide-react"
+import { BookOpen, Braces, Database, FileCode2, FileQuestion, Github, House, KeyRound, Layers3, Library, PanelLeft, Search, Upload, Users } from "lucide-react"
 import { docHref, endpoints, groups, guides, references } from "@/lib/navigation"
 import { SearchDialog } from "./search-dialog"
 import { DocumentSwitcher } from "./document-switcher"
@@ -22,9 +22,6 @@ const groupIcons = [Database, Users, Library, Layers3, Upload, Braces]
 const guideIcons = [BookOpen, KeyRound, Layers3]
 const headerItems: NavigationItem[] = [
   { href: "/", title: "首页", icon: House },
-  { href: docHref("overview"), title: "指南", icon: BookOpen },
-  { href: docHref("upload"), title: "API 参考", icon: Braces },
-  { href: docHref("examples"), title: "调用示例", icon: Terminal },
 ]
 
 function Navigation({ onSearch }: { onSearch: () => void }) {
@@ -70,12 +67,13 @@ export function DocsShell({ children }: { children: React.ReactNode }) {
   const [searchOpen, setSearchOpen] = useState(false)
   const isHome = pathname === "/"
   useEffect(() => {
+    if (isHome) return
     const handler = (event: KeyboardEvent) => {
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") { event.preventDefault(); setSearchOpen(value => !value) }
     }
     window.addEventListener("keydown", handler)
     return () => window.removeEventListener("keydown", handler)
-  }, [])
+  }, [isHome])
   if (pathname === "/preview/execution-timeline") return <>{children}</>
   return <LinkProvider component={AppLink}>
     <a className="docs-skip" href="#doc-content">跳转到文档内容</a>
@@ -83,14 +81,13 @@ export function DocsShell({ children }: { children: React.ReactNode }) {
       {!isHome && <Navigation onSearch={() => setSearchOpen(true)} />}
       <div className="docs-body">
         {isHome ? <SiteHeader items={headerItems} activeHref="/" navigationLabel="文档分类" routeKey={pathname} LinkComponent={Link} actions={<>
-          <IconButton label="搜索文档" onClick={() => setSearchOpen(true)}><Search size={18} /></IconButton>
-          <IconButton className="docs-header-github" nativeButton={false} label="在 GitHub 查看 ATHub" render={<a href="https://github.com/AlbaTextus/athub" target="_blank" rel="noopener noreferrer" />}><Github size={18} /></IconButton>
+          <IconButton className="docs-header-github" nativeButton={false} label="在 GitHub 查看 Docs" render={<a href="https://github.com/AlbaTextus/docs" target="_blank" rel="noopener noreferrer" />}><Github size={18} /></IconButton>
           <ThemeToggle />
         </>} /> : <div className="docs-mobile-controls"><MobileTrigger /></div>}
         <main id="doc-content" className="docs-main" key={pathname}>{children}</main>
         {isHome && <SiteFooter LinkComponent={Link} brandHref="/" />}
       </div>
     </Sidebar.Provider>
-    <SearchDialog open={searchOpen} onOpenChange={setSearchOpen} />
+    {!isHome && <SearchDialog open={searchOpen} onOpenChange={setSearchOpen} />}
   </LinkProvider>
 }

@@ -189,7 +189,7 @@ function AgentPanel({ tick }: { tick: number }) {
           const request = requestExamples[id % requestExamples.length]
           return <div className="cf-agent-row cf-request-row" key={id} data-request={id} data-status={request.status} style={{ "--agent-index": index } as CSSProperties}>
             <CornerDownRight className="cf-agent-branch" size={16} />
-            <span className="cf-agent-name cf-request-endpoint"><span>{request.method}</span> {request.path}</span>
+            <code className="cf-agent-name cf-request-endpoint"><span className="cf-code-command">{request.method}</span>{" "}<span className="cf-code-url">{request.path}</span></code>
             <ArrowRight className="cf-agent-arrow" size={16} />
             <span className="cf-request-status" data-kind={request.status < 300 ? "success" : request.status < 500 ? "client-error" : "server-error"}>{request.status}</span>
           </div>
@@ -197,7 +197,7 @@ function AgentPanel({ tick }: { tick: number }) {
       </div>
       <div className="cf-agent-loading"><span className="cf-pixel-loader">{Array.from({ length: 9 }, (_, index) => <i key={index} style={{ "--pixel": index } as CSSProperties} />)}</span></div>
     </div>
-    <div className="cf-agent-band"><span /></div>
+    <div className="cf-agent-band" />
     <div className="cf-agent-terminal">
       <div className="cf-terminal-prompt"><span>&gt;</span><code><span className="cf-code-command">curl</span>{" "}<span className="cf-code-url">{ATHUB_API_URL}/api/v2/platforms</span>{" "}<span className="cf-code-punctuation">{"\\"}</span>{"\n  "}<span className="cf-code-option">-H</span>{" "}<span className="cf-code-string">{'"Authorization: Bearer '}<span className="cf-code-variable">$ATHUB_API_TOKEN</span>{'"'}</span><i /></code></div>
       <span className="cf-terminal-enter">Enter<span><CornerDownLeft size={16} /></span></span>

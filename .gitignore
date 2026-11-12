@@ -4,3 +4,7 @@ release/
 .env*
 !.env.example
 next-env.d.ts
+/dist/
+.vinext/
+.cloudflare/
+.next/
