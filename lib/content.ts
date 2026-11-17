@@ -1,6 +1,6 @@
 import { getContentSource } from "@/lib/content-source"
 import { ATHUB_API_URL } from "./api"
-import { endpoints, navigation, type Endpoint } from "./navigation"
+import { apiFile, findPage, type Endpoint } from "./navigation"
 
 export type Heading = { id: string; text: string }
 export type Document = {
@@ -38,29 +38,35 @@ function jsonBlocks(markdown: string) {
   return [...markdown.matchAll(/```json\s*\n([\s\S]*?)\n```/g)].map(match => match[1].trim())
 }
 
-export function buildDocument(slug: string, source: string): Document | null {
-  const item = navigation.find(item => item.slug === slug)
-  if (!item) return null
+// `source` is the page's own Markdown file, or the ATHub API document for pages cut from it.
+export function buildDocument(service: string, slug: string, source: string): Document | null {
+  const located = findPage(service, slug)
+  if (!located) return null
+  const { page: item, endpoint } = located
+  if ("file" in item && item.file) {
+    // The page heading already shows the title, so the document's own H1 is dropped.
+    const markdown = source.replace(/\r\n/g, "\n").replace(/^# .+\n+/, "").trim()
+    return { slug, title: item.title, description: item.description, markdown, request: null, response: null }
+  }
   const sections = splitSections(source)
-  const endpoint = endpoints.find(item => item.slug === slug)
   let markdown = ""
   if (endpoint) {
     markdown = endpoint.sections.map(key => sections.get(key) ?? "").join("\n\n")
   } else if (slug === "overview") {
-    markdown = `ATHub 是 ALBATEXTUS 统一服务的 v2 内容模块。通过一套 REST API，管理平台、作者、标签库、小说、卷和章节。
+    markdown = `ATHub 是 ALBATEXTUS 统一服务的 v5 内容模块。通过一套 REST API，管理平台、作者、标签库、小说、卷、章节和插图。
 
 ## 开始之前
 
 ATHub 服务地址为 \`${ATHUB_API_URL}\`。以下所有接口统一使用此地址，且必须携带 \`Authorization: Bearer <ATHUB_API_TOKEN>\` 请求头。
 
-先登录账户，在 \`POST /api/v1/account/key\` 创建自己的 ATHub Key。创建时只返回一次明文，将它保存到调用端的 \`ATHUB_API_TOKEN\` 环境变量。所有内容路径统一以 \`/api/v2/\` 开头；账户与 OAuth 功能使用 \`/api/v1/\`。两者在同一 Go 进程中分别监听 \`8001\`（OAuth）和 \`8003\`（ATHub），数据库分别配置。
+先登录账户，在 \`POST /api/v1/account/key\` 创建自己的 ATHub Key。创建时只返回一次明文，将它保存到调用端的 \`ATHUB_API_TOKEN\` 环境变量。所有内容路径统一以 \`/api/v5/\` 开头；账户与 OAuth 功能使用 \`/api/v1/\`。两者在同一 Go 进程中分别监听 \`8001\`（OAuth）和 \`8005\`（ATHub），数据库分别配置。
 
 > 个人 Key 目前可读写共享内容库，不按用户隔离小说。请仅在服务端或采集程序中使用，切勿放入网页或公开客户端。Key 和调用记录保存在账户库；文档站不会代发 API 请求或保存你的密钥。
 
 ## 发起第一个请求
 
 \`\`\`bash
-curl --request GET '${ATHUB_API_URL}/api/v2/platforms' \\
+curl --request GET '${ATHUB_API_URL}/api/v5/platforms' \\
   --header "Authorization: Bearer $ATHUB_API_TOKEN"
 \`\`\`
 
@@ -90,8 +96,20 @@ ${sections.get("2")}
     endpoint, request: requests[0] ?? null, response: responses.at(-1) ?? null }
 }
 
-export async function getDocument(slug: string) {
-  return buildDocument(slug, await getContentSource())
+export const documentFile = (service: string, slug: string) => {
+  const page = findPage(service, slug)?.page
+  return page && "file" in page && page.file ? page.file : apiFile
+}
+
+export async function getDocument(service: string, slug: string) {
+  if (!findPage(service, slug)) return null
+  return buildDocument(service, slug, await getContentSource(documentFile(service, slug)))
+}
+
+// The Markdown offered for copying and download: page heading, endpoint line, then the body.
+export function exportMarkdown(document: Document) {
+  const { endpoint } = document
+  return `# ${document.title}\n\n${document.description}\n\n${endpoint ? `\`${endpoint.method} ${endpoint.path}\`\n\n` : ""}${document.markdown}`
 }
 
 export function getHeadings(markdown: string): Heading[] {

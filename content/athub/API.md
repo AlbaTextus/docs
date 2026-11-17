@@ -1,14 +1,14 @@
 # ATHub API 文档
 
-版本日期：2026-11-10。本文覆盖 Go 服务全部公开内容 API，包括获取、上传、覆盖和删除。
+版本日期：2026-11-17。本文覆盖 Go 服务全部公开内容 API，包括获取、上传、覆盖和删除。
 
 ## 1. 地址、鉴权与通用约定
 
-- 请求发送到统一 **Go 程序**中的 ATHub 内容模块；账户功能使用 `8001` 端口的 `/api/v1/*`，内容功能使用 `8003` 端口的 `/api/v2/*`。
+- 请求发送到统一 **Go 程序**中的 ATHub 内容模块；账户功能使用 `8001` 端口的 `/api/v1/*`，内容功能使用 `8005` 端口的 `/api/v5/*`。
 - 对外服务地址：`https://api.albatextus.com`。本文全部调用示例使用此 HTTPS 地址。
-- 自托管时，内容接口默认监听 `http://127.0.0.1:8003`，由服务端 `ATHUB_HTTP_ADDR` 决定。
-- API 域名由外部反向代理直接转发到 ATHub 后端 `8003`。账户前端不提供或转发 `/api/v2/*`；OAuth 与账户 `/api/v1/*` 仍可通过前端同源入口访问。
-- 所有内容路径统一带 `/api/v2/` 前缀，不接受末尾 `/`，例如使用 `/api/v2/upload`，没有 `/athub` 中间路径。旧 `/api/upload`、`/upload` 和末尾带 `/` 的路径不再兼容。
+- 自托管时，内容接口默认监听 `http://127.0.0.1:8005`，由服务端 `ATHUB_HTTP_ADDR` 决定。
+- API 域名由外部反向代理直接转发到 ATHub 后端 `8005`。账户前端不提供或转发 `/api/v5/*`；OAuth 与账户 `/api/v1/*` 仍可通过前端同源入口访问。
+- 所有内容路径统一带 `/api/v5/` 前缀，不接受末尾 `/`，例如使用 `/api/v5/upload`，没有 `/athub` 中间路径。旧 `/api/v2/*`、`/api/upload`、`/upload` 和末尾带 `/` 的路径不再兼容，返回 404。
 - 生产环境使用 HTTPS。接口面向服务端或采集程序，不提供浏览器跨域 CORS 支持。
 
 ### 请求头
@@ -19,7 +19,8 @@
 | `Content-Type` | 有 JSON 请求体的 POST/PUT 必填 | `application/json`，也接受 `application/json; charset=utf-8`。 |
 | `Accept` | 可选 | 推荐 `application/json`。 |
 
-个人 Key 用于标识调用用户，目前拥有共享内容库的读写权限，不按用户隔离小说。
+个人 Key 用于标识调用用户，读写的是共享内容库，不按用户隔离小说。
+可执行的操作由账户所属角色的权限策略决定：不允许的操作返回 `403`；角色开启审核时，写入先进入审核并返回 `202`，见第 9 节。
 不要放进网页、客户端公开包或日志。原全局服务密钥、旧版个人密钥、OAuth access token、
 Cookie 和用户身份请求头均不能替代新 Key。Key 默认永久有效，停用、重置为旧 Key 或用户停用后，调用返回 `401`。
 
@@ -54,7 +55,7 @@ Cookie 和用户身份请求头均不能替代新 Key。Key 默认永久有效�
 内容请求先写入待完成记录，再执行业务并补全状态码、耗时、响应字节数。
 记录包括正常请求和可归属用户的失败请求；未知 Key 的失败请求以匿名记录保存。
 健康检查和账户管理请求不计入内容调用次数。不记录密钥、请求头、查询字符串或小说正文；
-未知接口以 `/api/v2/{unknown}` 归类，防止记录敏感路径和无限扩张的统计项。
+未知接口以 `/api/v5/{unknown}` 归类，防止记录敏感路径和无限扩张的统计项。
 账户数据库不可用、无法校验 Key 或无法开始调用记录时，内容接口返回 `503`，不执行业务。
 程序中断或记录完成失败时保留 `status=null` 的待完成记录，不把它计作成功。
 
@@ -67,12 +68,13 @@ Cookie 和用户身份请求头均不能替代新 Key。Key 默认永久有效�
 | 请求体 | 一个 UTF-8 JSON 对象，无 BOM。拒绝顶层数组、`null`、多段 JSON 和未知字段。 |
 | 文件上传 | 将 `.json` 文件内容作为整个 HTTP 请求体发送，不使用 `multipart/form-data`。 |
 | 大小上限 | 每个请求体最多 **8 MiB = 8,388,608 字节**，包含 JSON 结构、转义字符等。 |
-| 单批上传 | `/api/v2/upload` 最多 200 个卷、1000 个章节，还须满足 8 MiB 限制。超过时分批发送。 |
+| 单批上传 | `/api/v5/upload` 最多 200 个卷、1000 个章节，还须满足 8 MiB 限制。超过时分批发送。 |
 | ID、排序 | JSON number，必须是 `1` 至 `2147483647` 的整数；不能用数字字符串或小数。可空 ID 另见字段表。 |
 | 时间 | 服务端生成，响应为 RFC 3339 时间字符串；示例使用 UTC。请求不能提交 `id`、`createdAt`、`updatedAt`。 |
 | 文本 | `title` 和平台 `name` 去除首尾空白后不能为空；所有存储文本都禁止 NUL 字符 `\u0000`。 |
 | 正文 | 纯文本，保留换行、首尾空白和缩进，但不能全部为空白。无 HTML 渲染、TXT/EPUB 解析或编码转换。 |
-| 图片 | `coverUrl` 只存字符串，不接收图片二进制，也不会抓取远程封面。 |
+| 标签 | 每部小说的 `tagIds`、`tagNames` 各自最多 100 项；标签名去除首尾空白后最多 100 个 Unicode 字符。 |
+| 图片 | `coverUrl` 只存字符串，不接收图片二进制，也不会抓取远程封面。插图同样只登记已有图片的地址、校验值和尺寸，见第 12 节。 |
 | 查询参数 | 拒绝未知键和同名参数重复出现，例如 `id=1&id=2`。 |
 | 请求时限 | 每次 API 处理的数据库上下文期限为 15 秒；上传是同步操作，不返回后台任务 ID。 |
 
@@ -82,7 +84,7 @@ Cookie 和用户身份请求头均不能替代新 Key。Key 默认永久有效�
 
 ### 通用分页参数
 
-分页列表接口采用下列字段，响应不含 `total`、`nextCursor` 或页码；`/api/v2/toc` 为全量目录对象，不使用分页：
+分页列表接口采用下列字段，响应不含 `total`、`nextCursor` 或页码；`/api/v5/toc` 为全量目录对象，不使用分页：
 
 | 查询键 | 类型 | 必填 | 默认 | 说明 |
 | --- | --- | --- | --- | --- |
@@ -96,35 +98,41 @@ Cookie 和用户身份请求头均不能替代新 Key。Key 默认永久有效�
 
 | 方法 | 路径 | 用途 | 成功状态 |
 | --- | --- | --- | --- |
-| GET | `/api/v2/platforms` | 获取平台列表或单个平台 | 200 |
-| POST | `/api/v2/platforms` | 新建平台 | 201 |
-| GET | `/api/v2/authors` | 获取作者列表或单个作者 | 200 |
-| POST | `/api/v2/authors` | 新建作者标识 | 201 |
-| GET | `/api/v2/tags` | 获取独立标签库列表或单个标签 | 200 |
-| POST | `/api/v2/tags` | 新建标签 | 201 |
-| PUT | `/api/v2/tags?id=...` | 修改标签名称 | 200 |
-| DELETE | `/api/v2/tags?id=...` | 删除未被引用的标签 | 204 |
-| GET | `/api/v2/novelinfo` | 获取小说列表或小说元信息 | 200 |
-| POST | `/api/v2/novelinfo` | 新建小说，仅元信息 | 201 |
-| PUT | `/api/v2/novelinfo?id=...` | 完整覆盖小说元信息 | 200 |
-| DELETE | `/api/v2/novelinfo?id=...` | 删除小说及全部卷、章节 | 204 |
-| GET | `/api/v2/volumes` | 获取卷列表或一个卷 | 200 |
-| PUT | `/api/v2/volumes` | 上传一个卷，不存在则新增、存在则覆盖卷名 | 200 |
-| DELETE | `/api/v2/volumes?novelId=...&order=...` | 删除空卷 | 204 |
-| GET | `/api/v2/toc?novelId=...` | 一次获取全书卷与章节目录，不含正文 | 200 |
-| GET | `/api/v2/content` | 获取章节列表或一个章节，包含正文 | 200 |
-| PUT | `/api/v2/content` | 上传一个章节，不存在则新增、存在则覆盖 | 200 |
-| DELETE | `/api/v2/content?novelId=...&order=...` | 删除一个章节 | 204 |
-| POST | `/api/v2/upload` | 一次创建小说并导入卷/章节，或给已有小说批量续传 | 201 / 200 |
+| GET | `/api/v5/platforms` | 获取平台列表或单个平台 | 200 |
+| POST | `/api/v5/platforms` | 新建平台 | 201 |
+| GET | `/api/v5/authors` | 获取作者列表或单个作者 | 200 |
+| POST | `/api/v5/authors` | 新建作者，可选填写姓名 | 201 |
+| PUT | `/api/v5/authors?id=...` | 修改或清空作者姓名 | 200 |
+| GET | `/api/v5/tags` | 获取独立标签库列表或单个标签 | 200 |
+| POST | `/api/v5/tags` | 新建标签 | 201 |
+| PUT | `/api/v5/tags?id=...` | 修改标签名称 | 200 |
+| DELETE | `/api/v5/tags?id=...` | 删除未被引用的标签 | 204 |
+| GET | `/api/v5/novelinfo` | 获取小说列表或小说元信息 | 200 |
+| POST | `/api/v5/novelinfo` | 新建小说，仅元信息 | 201 |
+| PUT | `/api/v5/novelinfo?id=...` | 完整覆盖小说元信息 | 200 |
+| DELETE | `/api/v5/novelinfo?id=...` | 删除小说及全部卷、章节 | 204 |
+| GET | `/api/v5/volumes` | 获取卷列表或一个卷 | 200 |
+| PUT | `/api/v5/volumes` | 上传一个卷，不存在则新增、存在则覆盖卷名 | 200 |
+| DELETE | `/api/v5/volumes?novelId=...&order=...` | 删除空卷 | 204 |
+| GET | `/api/v5/toc?novelId=...` | 一次获取全书卷与章节目录，不含正文 | 200 |
+| GET | `/api/v5/content` | 获取章节列表或一个章节，包含正文 | 200 |
+| PUT | `/api/v5/content` | 上传一个章节，不存在则新增、存在则覆盖 | 200 |
+| DELETE | `/api/v5/content?novelId=...&order=...` | 删除一个章节 | 204 |
+| POST | `/api/v5/upload` | 一次创建小说并导入卷/章节，或给已有小说批量续传 | 201 / 200 |
+| GET | `/api/v5/illustrations?novelId=...` | 获取一部小说的插图列表 | 200 |
+| POST | `/api/v5/illustrations?novelId=...` | 为小说关联一张已托管的插图 | 201 |
+| DELETE | `/api/v5/illustrations?novelId=...&id=...` | 删除一张插图，并从布局中移除 | 204 |
+| GET | `/api/v5/illustration-layout?novelId=...` | 获取小说的插图布局 | 200 |
+| PUT | `/api/v5/illustration-layout?novelId=...` | 整体保存插图布局 | 200 |
 
-POST 不带查询参数；`PUT /api/v2/volumes`、`PUT /api/v2/content` 也不带查询参数。
-不支持 PATCH。平台和作者目前只提供获取与创建，没有修改/删除接口。
+除 `POST /api/v5/illustrations` 必须带 `novelId` 外，其他 POST 不带查询参数；`PUT /api/v5/volumes`、`PUT /api/v5/content` 也不带查询参数。
+不支持 PATCH。平台只提供获取与创建；作者支持获取、创建和修改姓名，没有删除接口。
 
 ## 3. 平台
 
-### 3.1 获取：GET /api/v2/platforms
+### 3.1 获取：GET /api/v5/platforms
 
-获取单个：`GET /api/v2/platforms?id=1`。
+获取单个：`GET /api/v5/platforms?id=1`。
 
 | 查询键 | 类型 | 必填 | 说明 |
 | --- | --- | --- | --- |
@@ -132,9 +140,10 @@ POST 不带查询参数；`PUT /api/v2/volumes`、`PUT /api/v2/content` 也不�
 | `limit` | integer | 否 | 仅列表模式，通用分页。 |
 | `offset` | integer | 否 | 仅列表模式，通用分页。 |
 
-列表示例：`GET /api/v2/platforms?limit=20&offset=0`，按 ID 升序。
+列表示例：`GET /api/v5/platforms?limit=20&offset=0`，按 ID 升序。
+只需要总数时使用 `GET /api/v5/platforms?view=count`，返回 `{"total":123}`；`view=count` 不能与其他参数组合。
 
-### 3.2 创建：POST /api/v2/platforms
+### 3.2 创建：POST /api/v5/platforms
 
 请求：
 
@@ -150,7 +159,7 @@ POST 不带查询参数；`PUT /api/v2/volumes`、`PUT /api/v2/content` 也不�
 | `name` | string | 是 | 去除首尾空白后不能为空。 |
 | `url` | string / null | 否 | 省略或 null 保存为 null；作为文本保存，不做网络请求或 URL 有效性核验。 |
 
-`201` 响应，同时返回 `Location: /api/v2/platforms?id=1`：
+`201` 响应，同时返回 `Location: /api/v5/platforms?id=1`：
 
 ```json
 {
@@ -166,7 +175,7 @@ GET 单条返回相同结构，GET 列表返回这些对象组成的数组。
 
 ## 4. 作者
 
-### 4.1 获取：GET /api/v2/authors
+### 4.1 获取：GET /api/v5/authors
 
 | 查询键 | 类型 | 必填 | 说明 |
 | --- | --- | --- | --- |
@@ -175,52 +184,102 @@ GET 单条返回相同结构，GET 列表返回这些对象组成的数组。
 | `limit` | integer | 否 | 仅列表模式，通用分页。 |
 | `offset` | integer | 否 | 仅列表模式，通用分页。 |
 
-示例：`GET /api/v2/authors?id=2` 或 `GET /api/v2/authors?platformId=1&limit=20&offset=0`。
+示例：`GET /api/v5/authors?id=2` 或 `GET /api/v5/authors?platformId=1&limit=20&offset=0`。
 列表按 ID 升序。
 
-### 4.2 创建：POST /api/v2/authors
+批量查询：`GET /api/v5/authors?ids=1,2,3`，逗号分隔最多 100 个正整数 ID，不能与其他参数组合；返回存在的作者组成的数组，按 ID 升序，不存在的 ID 直接略过。
+只需要总数时使用 `GET /api/v5/authors?view=count`，返回 `{"total":123}`，同样不能与其他参数组合。
+
+### 4.2 创建：POST /api/v5/authors
 
 ```json
 {
-  "platformId": 1
+  "platformId": 1,
+  "name": "示例作者"
 }
 ```
 
-唯一请求键 `platformId` 为必填 integer，必须引用已存在的平台，否则返回 400。
-当前作者表没有姓名、来源作者 ID 等字段；不要提交 `name`、`authorName` 等额外键。
+| 请求键 | 类型 | 必填 | 默认/约束 |
+| --- | --- | --- | --- |
+| `platformId` | integer | 是 | 必须引用已存在的平台，否则返回 400。 |
+| `name` | string / null | 否 | 去除首尾空白后最多 200 个 Unicode 字符，禁止 NUL；省略、null、空串或纯空白保存为 null。 |
 
-`201` 响应，同时返回 `Location: /api/v2/authors?id=2`：
+不接受 `authorName`、来源作者 ID 等额外键。
+
+`201` 响应，同时返回 `Location: /api/v5/authors?id=2`：
 
 ```json
 {
   "id": 2,
-  "platformId": 1
+  "platformId": 1,
+  "name": "示例作者"
 }
 ```
 
-响应的 `id` 是生成的作者标识，`platformId` 为所属平台。
-GET 单条结构相同，GET 列表为此类对象的数组。重复 POST 会创建新的作者标识。
+响应的 `id` 是生成的作者标识，`platformId` 为所属平台，`name` 总会出现，未填写姓名时为 null。
+GET 单条结构相同，GET 列表为此类对象的数组。作者姓名不唯一，重复 POST 会创建新的作者标识，不会按姓名自动合并。
+
+### 4.3 修改姓名：PUT /api/v5/authors?id=2
+
+查询参数只能包含必填的 `id`，必须为正 32 位整数；作者不存在返回 404。
+
+```json
+{
+  "name": "新的作者名"
+}
+```
+
+| 请求键 | 类型 | 必填 | 默认/约束 |
+| --- | --- | --- | --- |
+| `name` | string / null | 否 | 去除首尾空白后最多 200 个 Unicode 字符，禁止 NUL；省略、null、空串或纯空白会清空姓名，保存为 null。 |
+
+请求体只接受 `name`，不能提交 `platformId`、`id` 或其他字段。即使清空姓名，也必须提交 JSON 对象，例如 `{"name":null}` 或 `{}`。
+
+`200` 响应：
+
+```json
+{
+  "id": 2,
+  "platformId": 1,
+  "name": "新的作者名"
+}
+```
+
+只修改姓名，作者 ID 和所属平台保持不变，已有小说继续引用同一个作者 ID。
 
 ## 5. 小说元信息
 
-### 5.1 获取：GET /api/v2/novelinfo
+### 5.1 获取：GET /api/v5/novelinfo
 
-获取单本：`GET /api/v2/novelinfo?id=10`。
-获取列表：`GET /api/v2/novelinfo?platformId=1&authorId=2&limit=20&offset=0`。
+获取单本：`GET /api/v5/novelinfo?id=10`。
+获取列表：`GET /api/v5/novelinfo?platformId=1&authorId=2&limit=20&offset=0`。
 
 | 查询键 | 类型 | 必填 | 说明 |
 | --- | --- | --- | --- |
 | `id` | integer | 单条模式必填 | 小说 ID，不能和其他参数组合；不存在返回 404。 |
 | `platformId` | integer | 否 | 仅列表模式，平台筛选。 |
-| `authorId` | integer | 否 | 仅列表模式，作者筛选；与平台筛选同时提供时取交集。 |
+| `authorId` | integer | 否 | 仅列表模式，作者筛选；与平台筛选同时提供时取交集。作者有姓名时，同名的其他作者记录（含其他平台）的小说也会一并返回。 |
 | `tagId` | integer | 否 | 仅列表模式，筛选引用此标签的小说；与其他筛选取交集。标签不存在时返回 `[]`。 |
 | `limit` | integer | 否 | 仅列表模式，通用分页。 |
 | `offset` | integer | 否 | 仅列表模式，通用分页。 |
 
 列表按小说 ID 降序；筛选无结果时返回 `[]`。
-元信息不嵌套卷或章节，分别使用 `/api/v2/volumes` 和 `/api/v2/content` 获取。
+元信息不嵌套卷或章节，分别使用 `/api/v5/volumes` 和 `/api/v5/content` 获取。
 
-### 5.2 创建：POST /api/v2/novelinfo
+需要总数、搜索或排序时使用分页视图：`GET /api/v5/novelinfo?view=page&limit=24&offset=0&sort=updated&q=关键词`，
+返回 `{"items":[...],"total":123}`，`items` 为小说对象数组，`total` 为符合筛选条件的总数。
+
+| 查询键 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| `view` | string | 是 | 固定为 `page`。 |
+| `platformId`、`authorId`、`tagId` | integer | 否 | 与列表模式相同的筛选。 |
+| `q` | string | 否 | 去除首尾空白后最多 200 个 Unicode 字符，禁止 NUL；按 NFKC 归一化、不区分大小写匹配书名或作者姓名中的片段。 |
+| `sort` | string | 否 | `updated`（默认）按元信息更新时间降序，`title` 按书名升序。 |
+| `limit`、`offset` | integer | 否 | 通用分页。 |
+
+只需要全库小说总数时使用 `GET /api/v5/novelinfo?view=count`，返回 `{"total":123}`，不能与其他参数组合。
+
+### 5.2 创建：POST /api/v5/novelinfo
 
 ```json
 {
@@ -234,26 +293,28 @@ GET 单条结构相同，GET 列表为此类对象的数组。重复 POST 会创
 }
 ```
 
-### 5.3 覆盖：PUT /api/v2/novelinfo?id=10
+### 5.3 覆盖：PUT /api/v5/novelinfo?id=10
 
 URL 只允许必填查询键 `id`。请求体与 POST 完全相同。
 这是**完整替换而非局部更新**，省略可空字段会清空，省略状态会恢复为 `ONGOING`。
-省略 `tagIds`、传 `null` 或 `[]` 都会清空这部小说的全部标签引用，不会删除标签库中的标签。
+`tagIds` 省略、传 `null` 或 `[]`，且没有提供 `tagNames` 时，会清空这部小说的全部标签引用，不会删除标签库中的标签。
 不存在返回 404。
 
-### 5.4 小说写入字段：POST、PUT 及 /api/v2/upload.novel 共用
+### 5.4 小说写入字段：POST、PUT 及 /api/v5/upload.novel 共用
 
 | 请求键 | 类型 | 必填 | 默认/约束 |
 | --- | --- | --- | --- |
 | `platformId` | integer | 是 | 已存在的平台 ID。 |
-| `authorId` | integer / null | 否 | 省略/null 保存为 null；非空时作者必须存在且属于 `platformId`。 |
+| `authorId` | integer / null | 否 | 省略/null 保存为 null；非空时作者必须存在且属于 `platformId`。不能与非空 `authorName` 同时提供。 |
+| `authorName` | string / null | 否 | 只写字段，用作者姓名代替 `authorId`。去除首尾空白后最多 200 个 Unicode 字符，禁止 NUL；省略、null、空串或纯空白视为未提供。在 `platformId` 下按姓名查找作者，同名时取 ID 最小的一位，找不到则在同一事务中新建。 |
 | `title` | string | 是 | 去除首尾空白后不能为空。书名不唯一，不按书名自动去重。 |
 | `summary` | string / null | 否 | 省略/null 保存为 null；空字符串与 null 不同。 |
 | `coverUrl` | string / null | 否 | 省略/null 保存为 null；不验证或下载图片。 |
-| `status` | string | 否 | `ONGOING` 连载中或 `COMPLETED` 已完结，区分大小写。省略/null/空字符串按 `ONGOING`。 |
-| `tagIds` | integer[] / null | 否 | 标签库中已存在的标签 ID，不得重复。省略/null 按 `[]`；任一标签不存在返回 400，整次写入回滚。 |
+| `status` | string | 否 | `ONGOING` 连载中、`COMPLETED` 已完结或 `ABANDONED` 已断更，区分大小写。省略/null/空字符串按 `ONGOING`。 |
+| `tagIds` | integer[] / null | 否 | 标签库中已存在的标签 ID，不得重复，最多 100 项。省略/null 按 `[]`；任一标签不存在返回 400，整次写入回滚。 |
+| `tagNames` | string[] / null | 否 | 只写字段，用标签名称代替或补充 `tagIds`，最多 100 项。每项去除首尾空白后不能为空，最多 100 个 Unicode 字符，禁止 NUL；重复名称只算一次。名称已存在则引用该标签，不存在则在同一事务中新建，结果与 `tagIds` 合并。 |
 
-POST 成功返回 `201` 和 `Location: /api/v2/novelinfo?id=10`；PUT 成功返回 `200`。
+POST 成功返回 `201` 和 `Location: /api/v5/novelinfo?id=10`；PUT 成功返回 `200`。
 两者以及 GET 单条的响应结构：
 
 ```json
@@ -274,9 +335,11 @@ POST 成功返回 `201` 和 `Location: /api/v2/novelinfo?id=10`；PUT 成功返�
 `id`、`createdAt`、`updatedAt` 为只读生成字段；其余键定义与写入字段表相同。
 可空字段即使为 null 也会返回。GET 列表为上述对象组成的数组。
 `tagIds` 始终返回数组，按标签 ID 升序；无标签时为 `[]`。标签名称单独通过标签库查询，不在小说中重复存储。
-批量创建的 `novel.tagIds` 使用相同规则；以 `novelId` 续传保留已有标签引用。
+`authorName` 和 `tagNames` 只在写入时使用，响应不会回显，只返回解析后的 `authorId` 与 `tagIds`。
+按名称解析只调整这部小说的作者和标签引用，不会给已有作者或标签改名；写入失败时，本次新建的作者和标签一并回滚。
+批量创建的 `novel.tagIds`、`novel.tagNames`、`novel.authorName` 使用相同规则；以 `novelId` 续传保留已有作者与标签引用。
 
-### 5.5 删除：DELETE /api/v2/novelinfo?id=10
+### 5.5 删除：DELETE /api/v5/novelinfo?id=10
 
 只接受必填 `id` 查询键，无请求体。成功返回 `204`；不存在返回 404。
 **永久删除这部小说及全部卷、章节**，不会删除平台或作者。
@@ -284,7 +347,7 @@ POST 成功返回 `201` 和 `Location: /api/v2/novelinfo?id=10`；PUT 成功返�
 
 ## 6. 卷
 
-### 6.1 获取：GET /api/v2/volumes
+### 6.1 获取：GET /api/v5/volumes
 
 | 查询键 | 类型 | 必填 | 说明 |
 | --- | --- | --- | --- |
@@ -293,11 +356,11 @@ POST 成功返回 `201` 和 `Location: /api/v2/novelinfo?id=10`；PUT 成功返�
 | `limit` | integer | 否 | 仅列表模式，通用分页。 |
 | `offset` | integer | 否 | 仅列表模式，通用分页。 |
 
-示例：`GET /api/v2/volumes?novelId=10&order=1`，或 `GET /api/v2/volumes?novelId=10&limit=20&offset=0`。
+示例：`GET /api/v5/volumes?novelId=10&order=1`，或 `GET /api/v5/volumes?novelId=10&limit=20&offset=0`。
 列表按 `order` 升序。小说存在但无卷/该页为空时返回 `[]`，小说不存在返回 404。
 单条模式下卷不存在也返回 404。卷响应不包含章节正文或章节计数。
 
-### 6.2 上传一个卷：PUT /api/v2/volumes
+### 6.2 上传一个卷：PUT /api/v5/volumes
 
 不带查询参数：
 
@@ -335,15 +398,15 @@ PUT 和 GET 单条响应：
 `createdAt`、`updatedAt` 为服务端时间，其他响应键与请求字段相同。
 GET 列表为上述对象的数组。
 
-### 6.3 删除：DELETE /api/v2/volumes?novelId=10&order=1
+### 6.3 删除：DELETE /api/v5/volumes?novelId=10&order=1
 
 只允许两个必填查询键 `novelId`、`order`，无请求体。
 成功返回 `204`，不存在返回 404。
-卷仍被章节引用时返回 `409`，不删除任何章节。先用 `/api/v2/content` 或 `/api/v2/upload` 将章节移出该卷，或先删除章节。
+卷仍被章节引用时返回 `409`，不删除任何章节。先用 `/api/v5/content` 或 `/api/v5/upload` 将章节移出该卷，或先删除章节。
 
 ## 7. 章节正文
 
-### 7.1 获取：GET /api/v2/content
+### 7.1 获取：GET /api/v5/content
 
 | 查询键 | 类型 | 必填 | 说明 |
 | --- | --- | --- | --- |
@@ -352,13 +415,13 @@ GET 列表为上述对象的数组。
 | `limit` | integer | 否 | 仅列表模式，通用分页。 |
 | `offset` | integer | 否 | 仅列表模式，通用分页。 |
 
-示例：`GET /api/v2/content?novelId=10&order=1`，或 `GET /api/v2/content?novelId=10&limit=20&offset=0`。
+示例：`GET /api/v5/content?novelId=10&order=1`，或 `GET /api/v5/content?novelId=10&limit=20&offset=0`。
 列表按章节 `order` 升序，包含完整正文。小说存在但无章节/该页为空返回 `[]`；小说不存在返回 404。
 单条模式下章节不存在也返回 404。
 没有按卷筛选参数；客户端依据返回的 `volumeId` 分组。读取整本小说需逐页请求，不提供无上限全量正文路由。
-只需标题与分卷关系时，使用第 7.4 节的 `/api/v2/toc`，避免传输正文。
+只需标题与分卷关系时，使用第 7.4 节的 `/api/v5/toc`，避免传输正文。
 
-### 7.2 上传一个章节：PUT /api/v2/content
+### 7.2 上传一个章节：PUT /api/v5/content
 
 不带查询参数：
 
@@ -382,7 +445,7 @@ GET 列表为上述对象的数组。
 
 以 `(novelId, order)` 新增或覆盖，覆盖时保留章节 ID，替换标题、正文和卷关联。
 无论新增还是覆盖均返回 `200`。小说/卷不存在或卷属于其他小说返回 400。
-`POST /api/v2/content` 不支持，单章上传使用 PUT；批量上传使用 `POST /api/v2/upload`。
+`POST /api/v5/content` 不支持，单章上传使用 PUT；批量上传使用 `POST /api/v5/upload`。
 
 PUT 和 GET 单条响应：
 
@@ -401,12 +464,12 @@ PUT 和 GET 单条响应：
 `id` 是章节 ID，`updatedAt` 为服务端更新时间，其他键定义与请求字段相同。
 未分卷时 `volumeId` 为 null。GET 列表为这些对象组成的数组。
 
-### 7.3 删除：DELETE /api/v2/content?novelId=10&order=1
+### 7.3 删除：DELETE /api/v5/content?novelId=10&order=1
 
 只允许两个必填查询键 `novelId`、`order`，无请求体。
 成功返回 `204`，小说或章节不存在返回 404。不重新编号其他章节，也不删除空卷。
 
-### 7.4 获取全书目录：GET /api/v2/toc?novelId=10
+### 7.4 获取全书目录：GET /api/v5/toc?novelId=10
 
 只读接口，要求相同的 Bearer Token，无请求体。只接受一个必填查询键：
 
@@ -422,6 +485,7 @@ PUT 和 GET 单条响应：
 ```json
 {
   "novelId": 10,
+  "wordCount": 5230,
   "volumes": [
     {
       "id": 20,
@@ -454,17 +518,18 @@ PUT 和 GET 单条响应：
 ```
 
 - `novelId`：当前小说 ID。
+- `wordCount`：全书字数，即全部章节正文中非空白 Unicode 字符的总数。标点计入；空格、制表符、换行和全角空格等空白不计，章节标题不计。没有章节时为 `0`。
 - `volumes`：完整卷列表，结构与第 6 节相同，按卷 `order` 升序，包括没有章节的空卷。
 - `chapters`：完整章节摘要列表，按**全书章节 `order`** 升序，不因分卷重置序号。
-- 章节摘要只包含 `id`、`novelId`、`volumeId`、`order`、`title`、`updatedAt`；字段含义与第 7.2 节相同，没有 `content` 键。
+- 章节摘要只包含 `id`、`novelId`、`volumeId`、`order`、`title`、`updatedAt`；字段含义与第 7.2 节相同，没有 `content` 键，也不提供单章字数。
 - 客户端通过 `chapters[].volumeId` 与 `volumes[].id` 关联；null 为未分卷章节，不能因分组丢弃。
-- 卷与章节来自同一条 SQL 查询的快照，避免并发上传期间返回不一致的分卷关系。
+- 卷、章节与字数来自同一条 SQL 查询的快照，避免并发上传期间返回不一致的分卷关系或字数。
 
 小说存在但没有卷或章节时，对应数组为 `[]`，不会返回 null；完全空书返回
-`{"novelId":10,"volumes":[],"chapters":[]}`。小说不存在返回 `404`。
-实际阅读时再用 `GET /api/v2/content?novelId=10&order=2` 按需读取章节正文。
+`{"novelId":10,"wordCount":0,"volumes":[],"chapters":[]}`。小说不存在返回 `404`。
+实际阅读时再用 `GET /api/v5/content?novelId=10&order=2` 按需读取章节正文。
 
-## 8. 批量上传：POST /api/v2/upload
+## 8. 批量上传：POST /api/v5/upload
 
 这是推荐的小说导入接口。上传前先取得平台 ID，可选取得作者 ID。
 每次请求只能选择以下一种模式：
@@ -539,13 +604,14 @@ PUT 和 GET 单条响应：
 ```
 
 续传只修改本批次列出的卷、章节，不清空其他数据，不修改小说元信息。
-要修改小说元信息，另行使用 `PUT /api/v2/novelinfo?id=10`。
+要修改小说元信息，另行使用 `PUT /api/v5/novelinfo?id=10`。
 
 ### 8.3 顶层字段
 
 | 请求键 | 类型 | 必填 | 说明 |
 | --- | --- | --- | --- |
 | `novel` | object / null | 新建模式必填 | 第 5.4 节定义的小说写入对象；与非空 `novelId` 互斥。 |
+| `authorName` | string / null | 否 | 仅新建模式可用，规则与第 5.4 节的 `novel.authorName` 相同，在 `novel.platformId` 下按姓名查找或新建作者。要求 `novel.authorId` 为空，且不能与 `novel.authorName` 同时提供；续传模式提交会返回 400。 |
 | `novelId` | integer / null | 续传模式必填 | 已存在的小说 ID；不存在返回 404。与非空 `novel` 互斥。 |
 | `volumes` | array / null | 否 | 本批次要新增/覆盖的卷，最多 200 项；省略/null/空数组均表示本批不写入卷。 |
 | `chapters` | array / null | 否 | 本批次要新增/覆盖的章节，最多 1000 项；省略/null/空数组均表示本批不写入章节。 |
@@ -575,7 +641,7 @@ PUT 和 GET 单条响应：
 
 ### 8.6 成功响应的所有键
 
-新建返回 `201`，同时带 `Location: /api/v2/novelinfo?id=10`；续传返回 `200`。
+新建返回 `201`，同时带 `Location: /api/v5/novelinfo?id=10`；续传返回 `200`。
 
 ```json
 {
@@ -587,6 +653,7 @@ PUT 和 GET 单条响应：
     "summary": "小说简介",
     "coverUrl": null,
     "status": "ONGOING",
+    "tagIds": [],
     "createdAt": "2026-10-29T04:00:00Z",
     "updatedAt": "2026-10-29T04:00:00Z"
   },
@@ -618,7 +685,7 @@ PUT 和 GET 单条响应：
 | --- | --- | --- |
 | `novel` | object | 完整小说元信息，所有键见第 5 节。 |
 | `volumes` | array | **本批次显式写入**的卷，结构见第 6 节，按请求数组顺序返回；未写卷时为 `[]`。仅被章节引用的旧卷不会额外出现在这里。 |
-| `chapters` | array | 本批次章节回执，按请求数组顺序返回；未写章节时为 `[]`。不重复返回正文，完整章节用 GET /api/v2/content 获取。 |
+| `chapters` | array | 本批次章节回执，按请求数组顺序返回；未写章节时为 `[]`。不重复返回正文，完整章节用 GET /api/v5/content 获取。 |
 | `chapters[].id` | integer | 章节数据库 ID。 |
 | `chapters[].order` | integer | 全书章节序号。 |
 | `chapters[].volumeId` | integer / null | 解析后的数据库卷 ID，未分卷为 null。 |
@@ -652,21 +719,23 @@ PUT 和 GET 单条响应：
 
 | HTTP 状态 | 场景 |
 | --- | --- |
-| 200 | 获取、覆盖/新增单卷单章、已有小说批量续传成功。 |
-| 201 | 创建平台、作者、标签、小说，或批量上传中新建小说成功。 |
+| 200 | 获取、修改作者姓名或标签名称、覆盖小说元信息、覆盖/新增单卷单章、已有小说批量续传、保存插图布局成功。 |
+| 201 | 创建平台、作者、标签、小说，关联插图，或批量上传中新建小说成功。 |
+| 202 | 账户所属角色开启了审核：写入尚未生效，返回 `{"review_id":"...","status":"pending","message":"..."}`，审核通过后才写入内容库。 |
 | 204 | 删除成功，无响应体。 |
-| 400 | 缺字段、未知字段/查询键、类型/范围错误、空标题/正文、NUL、JSON 错误、单批重复序号/数量超限、非法关联、批量模式冲突。 |
+| 400 | 缺字段、未知字段/查询键、类型/范围错误、空标题/正文、NUL、JSON 错误、单批重复序号/数量超限、标签数量或名称超限、非法关联、批量模式冲突、插图或布局参数不合法。 |
 | 401 | 缺少/错误/重复的 Authorization。返回 `WWW-Authenticate: Bearer`。鉴权先于路由检查。 |
+| 403 | 账户所属角色的权限策略不允许该操作，返回 `{"error":"operation_forbidden"}`。 |
 | 404 | 路径不存在，或获取/删除/更新的目标不存在；续传小说不存在。 |
 | 405 | 路径不支持该请求方法，返回 `Allow` 头。 |
-| 409 | 数据唯一性冲突（含标签重名），或试图删除仍包含章节的卷、仍被小说引用的标签。 |
+| 409 | 数据唯一性冲突（含标签重名），试图删除仍包含章节的卷、仍被小说引用的标签，或保存插图布局时 `revision` 已过期。 |
 | 413 | JSON 请求体超过 8 MiB。 |
 | 415 | JSON 写入请求没有正确的 `Content-Type`，包括 multipart 上传。 |
 | 500 | 未预期服务或数据库错误，不返回数据库内部细节。 |
 | 504 | 数据库请求上下文超时。 |
 
-引用错误与目标不存在的区别：`PUT /api/v2/content` 引用不存在的小说/卷是 400；
-`GET /api/v2/content` 获取不存在的小说/章节是 404；`POST /api/v2/upload` 用不存在的 `novelId` 续传是 404。
+引用错误与目标不存在的区别：`PUT /api/v5/content` 引用不存在的小说/卷是 400；
+`GET /api/v5/content` 获取不存在的小说/章节是 404；`POST /api/v5/upload` 用不存在的 `novelId` 续传是 404。
 
 ## 10. 完整调用示例
 
@@ -680,7 +749,7 @@ $base = 'https://api.albatextus.com' # 自托管时改为实际 Go 服务地址
 $headers = @{ Authorization = "Bearer $env:ATHUB_API_TOKEN" }
 
 $platformJson = @{ name = 'My platform'; url = $null } | ConvertTo-Json
-$platform = Invoke-RestMethod "$base/api/v2/platforms" -Method Post -Headers $headers `
+$platform = Invoke-RestMethod "$base/api/v5/platforms" -Method Post -Headers $headers `
   -ContentType 'application/json; charset=utf-8' `
   -Body ([Text.Encoding]::UTF8.GetBytes($platformJson))
 
@@ -699,27 +768,27 @@ $upload = @{
   )
 } | ConvertTo-Json -Depth 10
 
-$result = Invoke-RestMethod "$base/api/v2/upload" -Method Post -Headers $headers `
+$result = Invoke-RestMethod "$base/api/v5/upload" -Method Post -Headers $headers `
   -ContentType 'application/json; charset=utf-8' `
   -Body ([Text.Encoding]::UTF8.GetBytes($upload))
 
 $novelId = $result.novel.id
-Invoke-RestMethod "$base/api/v2/novelinfo?id=$novelId" -Headers $headers
-Invoke-RestMethod "$base/api/v2/volumes?novelId=$novelId" -Headers $headers
-Invoke-RestMethod "$base/api/v2/toc?novelId=$novelId" -Headers $headers
-Invoke-RestMethod "$base/api/v2/content?novelId=$novelId&order=1" -Headers $headers
+Invoke-RestMethod "$base/api/v5/novelinfo?id=$novelId" -Headers $headers
+Invoke-RestMethod "$base/api/v5/volumes?novelId=$novelId" -Headers $headers
+Invoke-RestMethod "$base/api/v5/toc?novelId=$novelId" -Headers $headers
+Invoke-RestMethod "$base/api/v5/content?novelId=$novelId&order=1" -Headers $headers
 ```
 
 ### 10.2 上传 JSON 文件
 
 把第 8.1 节 JSON 保存为 UTF-8 无 BOM 文件，替换真实平台/作者 ID。
-下面假设文件在 `temp/api/v2/upload.json`。这只是请求格式示例，不会自动读取本机文件路径。
+下面假设文件在 `temp/api/v5/upload.json`。这只是请求格式示例，不会自动读取本机文件路径。
 
 ```powershell
-curl.exe --request POST 'https://api.albatextus.com/api/v2/upload' `
+curl.exe --request POST 'https://api.albatextus.com/api/v5/upload' `
   --header "Authorization: Bearer $env:ATHUB_API_TOKEN" `
   --header 'Content-Type: application/json; charset=utf-8' `
-  --data-binary '@temp/api/v2/upload.json'
+  --data-binary '@temp/api/v5/upload.json'
 ```
 
 不要使用 `-F file=@...`。接口接收 JSON 内容，不接受 `file`、`filePath`、`filename`、`encoding` 等额外字段。
@@ -734,7 +803,7 @@ $nextBatch = @{
   )
 } | ConvertTo-Json -Depth 10
 
-Invoke-RestMethod "$base/api/v2/upload" -Method Post -Headers $headers `
+Invoke-RestMethod "$base/api/v5/upload" -Method Post -Headers $headers `
   -ContentType 'application/json; charset=utf-8' `
   -Body ([Text.Encoding]::UTF8.GetBytes($nextBatch))
 ```
@@ -747,7 +816,7 @@ Invoke-RestMethod "$base/api/v2/upload" -Method Post -Headers $headers `
 $limit = 100
 $offset = 0
 do {
-  $page = Invoke-RestMethod "$base/api/v2/content?novelId=$novelId&limit=$limit&offset=$offset" -Headers $headers
+  $page = Invoke-RestMethod "$base/api/v5/content?novelId=$novelId&limit=$limit&offset=$offset" -Headers $headers
   foreach ($chapter in $page) {
     # 在这里消费 chapter.id / volumeId / order / title / content / updatedAt
     $chapter
@@ -761,18 +830,19 @@ do {
 ## 11. 标签库
 
 标签保存在独立的 `Tag` 表，通过 `NovelTag` 与小说建立多对多引用；同一个标签可用于不同平台的多部小说。
-先创建或查询标签取得 ID，再在小说元信息中提交 `tagIds`。
+先创建或查询标签取得 ID，再在小说元信息中提交 `tagIds`；也可以直接提交 `tagNames`，由服务端按名称引用或新建标签，见第 5.4 节。
 
-### 11.1 获取：GET /api/v2/tags
+### 11.1 获取：GET /api/v5/tags
 
-单条查询：`GET /api/v2/tags?id=3`，只允许 `id` 参数；不存在返回 404。
-列表查询：`GET /api/v2/tags?limit=20&offset=0`，只接受通用分页参数，按 ID 升序。
+单条查询：`GET /api/v5/tags?id=3`，只允许 `id` 参数；不存在返回 404。
+列表查询：`GET /api/v5/tags?limit=20&offset=0`，只接受通用分页参数，按 ID 升序。
 列表为空时返回 `[]`；单条返回下节的对象，列表返回这些对象组成的数组。
+只需要总数时使用 `GET /api/v5/tags?view=count`，返回 `{"total":123}`，不能与其他参数组合。
 所有标签接口沿用个人 API Key 鉴权、JSON 错误格式和请求体限制。
 
-### 11.2 创建：POST /api/v2/tags
+### 11.2 创建：POST /api/v5/tags
 
-不接受查询参数，唯一请求字段 `name` 为必填 string，去除首尾空白后不能为空，禁止 NUL 字符。
+不接受查询参数，唯一请求字段 `name` 为必填 string，去除首尾空白后不能为空，最多 100 个 Unicode 字符，禁止 NUL 字符。
 名称唯一且区分大小写，重复名称返回 409；不会自动合并或创建第二个同名标签。
 
 ```json
@@ -781,7 +851,7 @@ do {
 }
 ```
 
-成功返回 `201`，响应头包含 `Location: /api/v2/tags?id=3`：
+成功返回 `201`，响应头包含 `Location: /api/v5/tags?id=3`：
 
 ```json
 {
@@ -790,15 +860,166 @@ do {
 }
 ```
 
-### 11.3 修改：PUT /api/v2/tags?id=3
+### 11.3 修改：PUT /api/v5/tags?id=3
 
-仅接受必填查询参数 `id`，请求体与创建相同，只提交 `name`。
+仅接受必填查询参数 `id`，请求体与创建相同，只提交 `name`，同样最多 100 个 Unicode 字符。
 成功返回 `200` 和修改后的标签对象；ID 保持不变，已有小说的引用继续有效。
 不存在返回 404，与其他标签重名返回 409；失败时原标签和小说引用保持原样。
 
-### 11.4 删除：DELETE /api/v2/tags?id=3
+### 11.4 删除：DELETE /api/v5/tags?id=3
 
 仅接受必填查询参数 `id`，无请求体。成功返回 `204`，不存在返回 404。
 仍被任一小说引用时返回 `409`，不会自动移除小说上的引用。
 先通过覆盖小说元信息从 `tagIds` 中移除该 ID，再删除标签。
 删小说只级联清理关系表，不删除标签；改名只修改标签库，所有小说仍引用同一个 ID。
+
+## 12. 插图
+
+插图挂在小说下，每条记录只登记一张**已托管图片**的地址、校验值和尺寸；接口不接收图片二进制，也不会抓取或校验远程图片。
+插图布局是每部小说一份的排版数据，记录各插图在画布上的位置和大小。
+所有插图接口沿用个人 API Key 鉴权、JSON 错误格式和请求体限制。
+
+### 12.1 获取：GET /api/v5/illustrations?novelId=10
+
+| 查询键 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| `novelId` | integer | 是 | 所属小说 ID；小说不存在返回 404。 |
+| `limit` | integer | 否 | 通用分页。 |
+| `offset` | integer | 否 | 通用分页。 |
+
+示例：`GET /api/v5/illustrations?novelId=10&limit=100&offset=0`。
+返回下节插图对象组成的数组，按插图 ID 升序，即关联的先后顺序；没有插图或该页为空时返回 `[]`。
+不支持用 `id` 查询单张插图，带 `id` 返回 400。
+
+### 12.2 关联：POST /api/v5/illustrations?novelId=10
+
+查询参数只能包含必填的 `novelId`。接口不接收图片二进制：先把图片上传到自己的图床或存储，再提交它的地址和信息。
+
+```json
+{
+  "url": "https://img.example.com/book/10/illustration-1.jpg",
+  "sha256": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+  "width": 1200,
+  "height": 1800
+}
+```
+
+| 请求键 | 类型 | 必填 | 约束 |
+| --- | --- | --- | --- |
+| `url` | string | 是 | `http` 或 `https` 地址，必须包含主机名，不能带用户名密码或 `#` 片段；最多 2048 字节，禁止 NUL、回车和换行。只保存字符串，不会请求该地址。 |
+| `sha256` | string | 是 | 图片内容的 SHA-256，64 位小写十六进制。 |
+| `width` | integer | 是 | 图片宽度（像素），`1` 至 `4096`。 |
+| `height` | integer | 是 | 图片高度（像素），`1` 至 `4096`；宽 × 高不超过 16,000,000。 |
+
+任一字段不合法返回 400；小说不存在返回 404。成功返回 `201`：
+
+```json
+{
+  "id": 40,
+  "novelId": 10,
+  "url": "https://img.example.com/book/10/illustration-1.jpg",
+  "sha256": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+  "width": 1200,
+  "height": 1800,
+  "createdAt": "2026-10-29T04:00:00Z"
+}
+```
+
+`id` 是插图 ID，布局中的 `imageId` 使用此值；`createdAt` 为服务端时间，其余键与请求字段相同。
+同一部小说内 `sha256` 唯一：重复提交相同校验值不会新增记录，而是返回已有的那一条，此时 `url` 和尺寸以首次保存的为准。
+
+### 12.3 删除：DELETE /api/v5/illustrations?novelId=10&id=40
+
+只允许两个必填查询键 `novelId`、`id`，无请求体。成功返回 `204`；小说不存在，或这部小说下没有该插图，返回 404。
+如果布局中引用了这张插图，对应的块会一并移除，布局 `revision` 加 1。
+只删除插图记录，不会删除图床上的图片文件。
+
+### 12.4 获取布局：GET /api/v5/illustration-layout?novelId=10
+
+只接受必填查询键 `novelId`；小说不存在返回 404。成功返回 `200`：
+
+```json
+{
+  "novelId": 10,
+  "blocks": [
+    {
+      "imageId": 40,
+      "x": 0,
+      "y": 0,
+      "width": 480,
+      "height": 720
+    }
+  ],
+  "revision": 1
+}
+```
+
+- `blocks`：布局块数组，保持保存时的顺序；每块对应一张插图，键见下节。
+- `revision`：布局版本号，每次保存或因删除插图而调整后加 1。
+- 从未保存过布局时返回 `{"novelId":10,"blocks":[],"revision":0}`，不会返回 404 或 null。
+
+### 12.5 保存布局：PUT /api/v5/illustration-layout?novelId=10
+
+只接受必填查询键 `novelId`。请求体是完整布局，**整体替换**原有布局，不做局部合并：
+
+```json
+{
+  "novelId": 10,
+  "blocks": [
+    {
+      "imageId": 40,
+      "x": 0,
+      "y": 0,
+      "width": 480,
+      "height": 720
+    },
+    {
+      "imageId": 41,
+      "x": 520,
+      "y": 0,
+      "width": 480,
+      "height": 320
+    }
+  ],
+  "revision": 1
+}
+```
+
+| 请求键 | 类型 | 必填 | 约束 |
+| --- | --- | --- | --- |
+| `novelId` | integer | 是 | 必须与查询参数 `novelId` 相同。 |
+| `blocks` | array | 是 | 最多 500 项；清空布局时提交 `[]`，省略或 null 返回 400。 |
+| `blocks[].imageId` | integer | 是 | 这部小说下已存在的插图 ID，同一布局内不得重复。 |
+| `blocks[].x`、`blocks[].y` | number | 是 | 块左上角坐标，不小于 `0`。 |
+| `blocks[].width`、`blocks[].height` | number | 是 | 块的宽和高，均大于 `0`，且较长的一边不小于 `40`。 |
+| `revision` | integer | 是 | 上一次读取到的版本号；从未保存过时提交 `0`。 |
+
+坐标使用宽 `1000`、高 `5000` 的画布单位，不是像素：要求 `x + width ≤ 1000`、`y + height ≤ 5000`。数值可以是小数。
+
+成功返回 `200` 和保存后的布局，`revision` 为新版本号：
+
+```json
+{
+  "novelId": 10,
+  "blocks": [
+    {
+      "imageId": 40,
+      "x": 0,
+      "y": 0,
+      "width": 480,
+      "height": 720
+    },
+    {
+      "imageId": 41,
+      "x": 520,
+      "y": 0,
+      "width": 480,
+      "height": 320
+    }
+  ],
+  "revision": 2
+}
+```
+
+`revision` 与当前版本不一致时返回 `409`，说明布局已被其他请求修改；重新 GET 取得最新布局和版本号后再保存。
+引用了不存在或不属于这部小说的插图返回 400；小说不存在返回 404。
