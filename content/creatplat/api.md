@@ -68,7 +68,7 @@
 }
 ```
 
-返回的地址再作为小说元信息的 `coverUrl` 提交。图片不是有效图片或超出限制返回 `400 cover_invalid`；图床未配置或暂不可用返回 `503 cover_upload_unavailable`；图床上传失败返回 `502 cover_upload_failed`。
+返回的地址再作为小说元信息的 `coverUrl` 提交。图片不是有效图片或超出限制返回 `400 cover_invalid`；封面上传暂不可用返回 `503 cover_upload_unavailable`；保存到图床失败返回 `502 cover_upload_failed`。
 
 ## 插图
 

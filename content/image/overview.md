@@ -13,6 +13,7 @@
 - 外部 Key 在 OAuth 账户库按 SHA-256 存储，由 `GET/POST/PUT/DELETE /api/v1/admin/image/keys` 管理，创建时仅返回一次明文。`upload/list/delete/manage` 为独立权限。
 - 支持 `Authorization: Bearer <Key>` 和旧版直接放置 Key 的格式。无效 Key 不回退到 Cookie；过期、撤销、权限不足均拒绝。
 - `/file/` 读取公开，`Block` 文件禁止公开读取。`?from=admin` 预览要求管理员 session 或 `manage` Key。
+- 同进程的 OAuth 与 creatplat 在校验登录会话和权限后直接调用图床保存头像、背投、封面和插图，不经 HTTP 和 Key，结果与分类上传接口相同。这条路径不记录上传 IP，也不应用 IP 黑名单。外部 Key 只用于进程外的调用方。
 
 | 能力 | 新接口（均加 `/api/v2`） |
 | --- | --- |

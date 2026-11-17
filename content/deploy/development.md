@@ -3,7 +3,7 @@
 ## 目录与命令
 
 ```text
-cmd/                  服务入口、开发 seed 与本地图床接入工具
+cmd/                  服务入口、开发 seed、数据迁移与 Status 接入工具
 internal/             配置、统一 HTTP 装配、账户存储及过渡适配
 modules/oauth/        账户、session、OAuth、外部 Key、Passkey 与第三方登录
 modules/image/        图床上传、文件管理、本地/S3 存储及图床库迁移
@@ -36,8 +36,6 @@ release/              本地构建与发布产物
 | `pnpm db:studio` | 打开数据库管理界面 |
 
 Prisma schema 与迁移是数据库结构的来源；Go 服务没有 Prisma Client，也不会在启动时自动建表。首次检查前端或更换构建目录时，先完成一次前端构建，生成 Next.js 路由类型。
-
-相邻的 ALBATEXTUS 图床可通过 `go run ./cmd/register-imgbed` 联调注册。该工具会登记客户端并写入相邻图床的本地配置，运行前请核对 [工具源码](https://github.com/AlbaTextus/atnexus/blob/main/cmd/register-imgbed/main.go) 中的目录、端口与回调约定。
 
 相邻的 Status 后台可通过 `go run ./cmd/register-status` 接入当前 OAuth。工具创建独立机密应用 `albatextus-status`，最低角色为 `ADMIN`，仅申请 `profile`；默认回调为 `http://127.0.0.1:3100/api/auth/callback`，凭据写入 `../status/.dev.vars`。应用所有者使用 `SEED_ADMIN_EMAIL` 对应的现有管理员，也可在首次登记时用 `-admin-id <UUID>` 指定。Status 默认按服务端用户资料中的 `role` 允许 `ADMIN`、`SUPER_ADMIN`，符合条件的其他账号也能登录；OAuth 应用更严格的 `SUPER_ADMIN` 最低角色会保留。支持 `-app-url`、`-issuer-url`、`-output`；重复运行保留已有密钥、回调、Status 管理密钥和自定义允许名单。旧版仅允许所有者 UUID 的配置，可运行 `go run ./cmd/register-status -migrate-owner-allowlist` 切换到角色授权；该选项拒绝自动清理自定义账号名单。登记后在 Status 执行 `npm run db:migrate:local` 并重启开发服务。工具不会重置用户、运行 seed 或修改其他应用。
 

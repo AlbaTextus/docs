@@ -48,7 +48,6 @@ Go 服务从仓库根目录 `.env` 加载配置，已有进程环境变量优先
 | `HTTP_SHUTDOWN_TIMEOUT` | 停止服务时等待在途请求的期限，默认 `10s`，必须为正 |
 | `BCRYPT_COST` | 密码哈希强度，默认 `12`，取值 10 至 15 |
 | `WEBAUTHN_RP_NAME` | Passkey 显示的站点名称，默认 `ALBATEXTUS` |
-| `IMGBED_URL`、`IMGBED_API_TOKEN` | 头像、封面和插图上传使用的图床地址与上传 Key，只在服务端使用 |
 | `NEXT_PUBLIC_ATHUB_API_URL` | 浏览器直连 ATHub 的公开地址，本地为 `http://localhost:8005`；前端构建前配置 |
 | `NEXT_PUBLIC_CREDIT_URL` | 积分服务地址，本地默认 `http://localhost:3300`；前端构建前配置 |
 

@@ -43,4 +43,4 @@ Compose 项目与后端服务均名为 `atnexus`。数据库名称、账号及�
 
 `SMTP_*` 也不在后端容器接收的变量中，因此默认的 Compose 环境下邮箱注册与验证处于暂停状态；需要时与 `TURNSTILE_*` 一样在 Compose 配置或覆盖文件中补充。
 
-`IMGBED_COMPOSE_URL` 可覆盖后端访问图床的地址，默认 `http://127.0.0.1:8002`。创作者库数据卷默认名为 `atnexus_creatplat-postgres`，可用 `CREATPLAT_POSTGRES_VOLUME` 指定已有的卷。
+创作者库数据卷默认名为 `atnexus_creatplat-postgres`，可用 `CREATPLAT_POSTGRES_VOLUME` 指定已有的卷。

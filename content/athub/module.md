@@ -67,9 +67,8 @@ Key 只在生成或重置时显示明文，账户库只保存 SHA-256 哈希。�
 宿主验证登录会话、CSRF 和当前插图上传权限后，校验实际图片内容，
 接受 JPG、PNG、WebP、GIF（GIF 使用首帧）；原图最大 5 MiB、单边 8192 像素、总像素 1600 万。
 图片去除元数据，按原比例缩小至最长边 4096 像素以内，并转换为 JPEG；
-透明区域使用白底。图床使用现有 `IMGBED_URL`、`IMGBED_API_TOKEN`，
-保存到 `/api/v2/categories/book/illustrations/upload?entityId={novelId}` 对应的作品目录。
-图床密钥仅在服务端使用。
+透明区域使用白底。宿主在同一进程内直接保存到图床的
+`book/{novelId}/illustrations/` 目录，不经 HTTP 和上传 Key。
 
 上传后宿主把图片 URL、归一化后图片的 SHA-256、宽高提交到
 内容关联能力（公开对应 `POST /api/v5/illustrations?novelId={id}`，JSON 字段为 `url`、`sha256`、`width`、`height`）。
