@@ -29,4 +29,4 @@
 
 分类为 `user`、`user/avatars`、`user/backgrounds`、`book`、`book/covers`、`book/illustrations`、`forum`。新增文件使用 `user/<UUID>/avatars/...`、`book/<ID>/covers/...` 等结构，查询兼容旧分类在前的路径。上传返回数组中的 `src`；`returnFormat=full` 使用 `IMAGE_PUBLIC_URL`。
 
-文件支持 GET、HEAD、Range，并直接流式响应。本地存储使用 `os.Root` 限制路径逃逸，独占保留和原子链接防止覆盖。分块所有者、渠道、有效期、每块摘要及合并回执在 PG 维护，重复合并返回同一结果；合并事务限制并发数量，为文件提交保留数据库连接。
+文件支持 GET、HEAD、Range，公开读取支持条件请求（内容未变化时返回 304），并直接流式响应。本地存储使用 `os.Root` 限制路径逃逸，独占保留和原子链接防止覆盖。分块所有者、渠道、有效期、每块摘要及合并回执在 PG 维护，重复合并返回同一结果；合并事务限制并发数量，为文件提交保留数据库连接。

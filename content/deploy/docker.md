@@ -14,8 +14,6 @@ Compose 项目与后端服务均名为 `atnexus`。数据库名称、账号及�
 `ATHUB_POSTGRES_VOLUME` 设为实际已有卷名。升级时先停止旧 Compose 服务，再启动新服务，
 避免端口冲突；停止旧服务时保留数据卷，不使用 `down -v`。
 
-Redis 服务位于 Compose 的 `redis` profile 中，默认不会启动。启用缓存时使用 `docker compose --profile redis up --build -d`；禁用时继续使用普通的 `docker compose up --build -d`。Compose 内部默认连接 `redis://redis:6379/0`，如需覆盖可设置 `REDIS_COMPOSE_URL`。
-
 ## 服务与端口
 
 | 服务 | 镜像或构建 | 宿主端口 | 说明 |
@@ -23,11 +21,12 @@ Redis 服务位于 Compose 的 `redis` profile 中，默认不会启动。启用
 | `postgres` | `postgres:16-alpine` | `5432` | 账户库 |
 | `athub-postgres` | `postgres:16-alpine` | `5433` | 内容库 |
 | `creatplat-postgres` | `postgres:16-alpine` | `5434`，可用 `CREATPLAT_POSTGRES_PORT` 修改 | 创作者库 |
-| `redis` | `redis:7-alpine` | `6379` | 可选，仅在 `redis` profile 中启动，不持久化 |
 | `atnexus` | 根目录 `Dockerfile` | `8001`、`8002`、`8004`、`8005` | Go 后端，四个模块在同一容器 |
 | `web` | `web/Dockerfile` | `3288` | Next.js 前端 |
 
-后端镜像以静态方式编译，运行在 distroless 的非 root 用户下。Compose 里没有图床数据库容器：图床库使用外部 PostgreSQL，图片目录以绑定挂载的方式挂到容器的 `/data/images`。
+后端镜像以静态方式编译，运行在 distroless 的非 root 用户下。Compose 里没有图床数据库容器：图床库使用外部 PostgreSQL，图片目录以绑定挂载的方式挂到容器的 `/data/images`。上传与分块的临时文件保存在具名卷 `image-temp`（容器内 `/var/lib/atnexus/image-temp`），重建容器后未完成的分块上传可以继续。
+
+`atnexus` 服务带有健康检查。运行镜像里没有 shell 和 HTTP 客户端，由程序自检：`/atnexus healthcheck` 请求 OAuth 监听地址的 `/healthz`，返回 200 才算健康；四个监听器同时启动，它应答即表示启动完成。`web` 等后端健康后才启动。
 
 ## 启动前必须设置
 

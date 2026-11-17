@@ -15,7 +15,6 @@
 - 统一服务启动时检查全部四套数据库，任何一套初始化失败都不会开始监听。
 - 所有命令在仓库根目录执行，读取根目录的 `.env`。连接账号、密码和地址只放在环境配置里，不提交到仓库。
 - 图床启动时会检查实际连接到的数据库，拒绝指向账户库、内容库或创作者库。
-- Redis 可选，只用作会话缓存，不保存需要迁移的数据。
 
 ## 全新安装
 
@@ -56,13 +55,16 @@ npm run db:image:deploy
 | --- | --- | --- |
 | 账户库 | `20261101000000_remove_communications` | 永久删除 `mail_deliveries` 和 `communications` 表及其中的消息、发送记录 |
 | 账户库 | `20261110000000_athub_user_keys`、`20261110010000_athub_single_key`、`20261110020000_athub_admin_disable` | 个人 Key、单 Key 模式与管理员禁用，见 [ATHub 密钥与权限](/oauth/athub-key) |
+| 账户库 | `20261117000000_athub_key_call_counter` | 个人 Key 的已放行调用计数列，迁移时按调用记录回填一次；新版本启动时要求该列存在。须在旧后端停止后执行，旧程序在迁移之后放行的调用不会计入额度 |
 | 内容库 | `20261103000000_remove_user_api` | 删除旧 `ApiUser`、`ApiKey`、`ApiUsage` 表及数据，保留平台、作者、小说、卷与章节 |
 | 内容库 | `20261110030000_add_tags`、`20261110040000_add_author_name` | 标签库与作者姓名 |
 | 内容库 | `20261115000000_novel_illustrations`、`20261115010000_illustration_layout` | 插图与插图布局 |
 | 内容库 | `20261116000000_novel_abandoned_status` | 小说状态 `ABANDONED` |
 | 内容库 | `20261117000000_novel_list_indexes`、`20261117010000_chapter_word_count`、`20261117020000_author_name_indexes` | 列表索引、章节字数生成列与作者姓名索引；全书目录的 `wordCount` 依赖其中的字数列 |
+| 内容库 | `20261117030000_chapter_content_digest` | 章节正文的摘要与长度生成列 `contentHash`、`contentLength`，记录修订历史时不必读取正文；新版本启动时要求这两列存在。迁移会重写一次章节表并回填已有章节，章节多时耗时较长 |
 | 创作者库 | `20261116010000_creator_database` | 建立独立创作者库的审核与历史表 |
 | 图床库 | `20261116020000_image_database` | 建立独立图床库；账户库同时需要 `20261116020000_image_api_keys` |
+| 图床库 | `20261117020000_image_list_order` | 重建文件列表的时间索引，使其与列表的排序方式一致 |
 
 积分与支付已迁出到独立的 Credit 服务，旧钱包表保留为只读迁移来源。在旧账户库上运行 `prisma migrate dev` 可能提出删除这些已移出的表，完成迁移及核对前不要接受，说明见 [OAuth 模块概览](/oauth/overview)。
 

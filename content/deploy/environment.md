@@ -6,10 +6,6 @@ Go 服务从仓库根目录 `.env` 加载配置，已有进程环境变量优先
 | --- | --- |
 | `DATABASE_URL` | PostgreSQL 连接地址，必填 |
 | `ATHUB_DATABASE_URL` | 内容库 PostgreSQL 连接地址，必填，与账户库分开 |
-| `REDIS_ENABLED` | 是否启用 Redis 会话缓存，默认 `false`；关闭时不建立 Redis 连接 |
-| `REDIS_URL` | Redis 连接地址，默认 `redis://localhost:6379/0`；支持 `redis://` 与 `rediss://` |
-| `REDIS_KEY_PREFIX` | Redis 键前缀，默认 `albatextus:connect` |
-| `REDIS_SESSION_TTL` | 会话缓存时长，默认 `30s`，且不会超过会话剩余有效期 |
 | `CLIENT_SECRET_ENCRYPTION_KEY` | 客户端密钥与 PKCE verifier 加密密钥，必填并保持稳定 |
 | `APP_ENV` | 本地为 `development`，生产为 `production` |
 | `HTTP_ADDR` | OAuth 监听地址，默认 `:8001` |
@@ -46,7 +42,7 @@ Go 服务从仓库根目录 `.env` 加载配置，已有进程环境变量优先
 | --- | --- |
 | `OAUTH_HTTP_ADDR` | OAuth 监听地址，设置后优先于 `HTTP_ADDR` |
 | `CREATPLAT_DATABASE_URL` | 必填，独立创作者库；不回退到 `DATABASE_URL`，见[创作者平台数据库](/creatplat/database) |
-| `CREATPLAT_MIGRATION_CHECK_TIMEOUT` | 启动时核对旧审核、历史数据的期限，默认 `10m`，必须为正 |
+| `CREATPLAT_MIGRATION_CHECK_TIMEOUT` | 后台逐行核对旧审核、历史数据的期限，默认 `10m`，必须为正；核对在监听器就绪后执行，不延长启动时间，见[创作者平台数据库](/creatplat/database) |
 | `TRUSTED_PROXY_CIDRS` | 允许提供 `X-Forwarded-For` 的反向代理网段，逗号分隔，默认 `127.0.0.1/32,::1/128`；入口代理不经回环地址连接时需加入它的网段 |
 | `HTTP_REQUEST_TIMEOUT` | 普通请求期限，默认 `15s`，必须为正 |
 | `HTTP_SHUTDOWN_TIMEOUT` | 停止服务时等待在途请求的期限，默认 `10s`，必须为正 |

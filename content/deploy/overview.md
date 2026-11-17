@@ -37,7 +37,7 @@ Go module 路径为 `github.com/AlbaTextus/atnexus`，根工作区包为 `@albat
 
 ## 部署顺序
 
-1. **准备环境**：Go 1.26.1+、Node.js 24+、pnpm 和 PostgreSQL，Redis 可选。见[本地快速开始](/deploy/local)。
+1. **准备环境**：Go 1.26.1+、Node.js 24+、pnpm 和 PostgreSQL。见[本地快速开始](/deploy/local)。
 2. **配置**：在仓库根目录的 `.env` 中填写数据库连接、对外地址和加密密钥。见[环境变量](/deploy/environment)。
 3. **建库并迁移**：账户、内容、创作者、图床四套数据库分别迁移；程序启动时不会自动建表。见[数据库与迁移](/deploy/database)。
 4. **构建**：本地直接构建，或生成 Linux AMD64 发布包。见[构建与发布](/deploy/build)；容器方式见 [Docker Compose](/deploy/docker)。

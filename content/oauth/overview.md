@@ -23,7 +23,7 @@ ATHub 公开入口改为 `/api/v5/*`，创作者平台为 `/api/v4/*`。
 
 - `api/`：账户及外部 Key 管理 HTTP API。
 - `protocol/`：OAuth 协议核心。
-- `session.go`：其他模块共用的 session 校验权威；直接核验数据库，避免 Redis 撤销失效失败后继续授权。
+- `session.go`：其他模块共用的 session 校验权威；每次请求直接核验数据库，撤销立即生效。
 - `apikey.go`：外部 API Key 校验权威，保留既有哈希、用户归属与状态规则。
 - `repository/apikey.go`：外部 Key 生命周期及校验查询；原账户存储层委托此实现。
 - 账户及 Key 数据继续使用原账户库和迁移链，本轮不搬迁物理数据。

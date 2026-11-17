@@ -1,6 +1,6 @@
 # 本地快速开始
 
-以下命令在仓库根目录执行。需要 Go 1.26.1+、Node.js 24+、pnpm 和 PostgreSQL；Redis 为可选的会话缓存。仓库通过 `packageManager` 固定 pnpm 版本；Docker Compose 使用 PostgreSQL 16 和可选的 Redis 7。
+以下命令在仓库根目录执行。需要 Go 1.26.1+、Node.js 24+、pnpm 和 PostgreSQL。仓库通过 `packageManager` 固定 pnpm 版本；Docker Compose 使用 PostgreSQL 16。
 
 ## 1. 准备环境
 
@@ -49,12 +49,6 @@ WEBAUTHN_RP_ORIGINS=http://localhost:3288
 
 ```bash
 docker compose up -d postgres athub-postgres creatplat-postgres
-```
-
-如需启用 Redis 会话缓存，在 `.env` 设置 `REDIS_ENABLED=true`，再启动可选容器；不开启时 Go 服务不会连接 Redis：
-
-```bash
-docker compose --profile redis up -d redis
 ```
 
 创作者数据库先执行 `npm run db:creatplat:deploy`；已有安装须停止旧后端后执行 `npm run db:creatplat:import`，核对通过再启动新版本。完整步骤见 [DATABASE.md](/creatplat/database)。数据库就绪后执行：
