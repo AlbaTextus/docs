@@ -6,7 +6,7 @@
 
 | 方法 | 路径 | 用途 |
 | --- | --- | --- |
-| GET | `/healthz` | 创作者库和账户库都可用时返回 `{"status":"ok"}`，否则返回 503 |
+| GET | `/api/v4/healthz` | 创作者库和账户库都可用时返回 `{"status":"ok"}`，否则返回 503 |
 | GET | `/api/v4/history?novelId=2&limit=20&offset=0` | 分页读取一部作品的变更历史 |
 | GET | `/api/v4/contributors?novelId=2` | 读取作品的创建者与后续贡献者 |
 | POST | `/api/v4/account/athub/submissions` | 提交小说 |

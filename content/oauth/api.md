@@ -9,7 +9,7 @@
 
 | 方法 | 路径 | 用途 |
 | --- | --- | --- |
-| GET | `/healthz` | 正常返回 200；维护开启返回 433（status=maintenance）；数据库或维护状态读取失败返回 503 |
+| GET | `/api/v1/healthz` | 正常返回 200；维护开启返回 433（status=maintenance）；数据库或维护状态读取失败返回 503 |
 | GET | `/.well-known/oauth-authorization-server` | OAuth 元数据 |
 | GET | `/oauth/authorize` | 发起授权码流程 |
 | POST | `/oauth/token` | 换取、刷新令牌或使用客户端凭证 |

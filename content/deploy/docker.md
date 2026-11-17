@@ -21,12 +21,12 @@ Compose 项目与后端服务均名为 `atnexus`。数据库名称、账号及�
 | `postgres` | `postgres:16-alpine` | `5432` | 账户库 |
 | `athub-postgres` | `postgres:16-alpine` | `5433` | 内容库 |
 | `creatplat-postgres` | `postgres:16-alpine` | `5434`，可用 `CREATPLAT_POSTGRES_PORT` 修改 | 创作者库 |
-| `atnexus` | 根目录 `Dockerfile` | `8001`、`8002`、`8004`、`8005` | Go 后端，四个模块在同一容器 |
+| `atnexus` | 根目录 `Dockerfile` | `8001`、`8002`、`8004`、`8005`、`8288` | Go 后端，四个模块在同一容器；`8288` 是聚合端口 |
 | `web` | `web/Dockerfile` | `3288` | Next.js 前端 |
 
 后端镜像以静态方式编译，运行在 distroless 的非 root 用户下。Compose 里没有图床数据库容器：图床库使用外部 PostgreSQL，图片目录以绑定挂载的方式挂到容器的 `/data/images`。上传与分块的临时文件保存在具名卷 `image-temp`（容器内 `/var/lib/atnexus/image-temp`），重建容器后未完成的分块上传可以继续。
 
-`atnexus` 服务带有健康检查。运行镜像里没有 shell 和 HTTP 客户端，由程序自检：`/atnexus healthcheck` 请求 OAuth 监听地址的 `/healthz`，返回 200 才算健康；四个监听器同时启动，它应答即表示启动完成。`web` 等后端健康后才启动。
+`atnexus` 服务带有健康检查。运行镜像里没有 shell 和 HTTP 客户端，由程序自检：`/atnexus healthcheck` 请求 OAuth 监听地址的 `/api/v1/healthz`，返回 200 才算健康；四个监听器同时启动，它应答即表示启动完成。`web` 等后端健康后才启动。
 
 ## 启动前必须设置
 

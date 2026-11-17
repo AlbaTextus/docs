@@ -45,7 +45,7 @@ npm run db:image:deploy
 3. 对有新迁移的数据库执行上面的部署命令。迁移是独立的发布步骤，不随程序启动执行。
 4. 账户库里还保留旧审核和历史数据时，执行 `npm run db:creatplat:import` 导入并核对，步骤见[创作者平台数据库](/creatplat/database)。
 5. 从原 SQLite 图床升级时，停写并备份后执行 `npm run db:image:import -- -source <SQLite 绝对路径>`，步骤见[图床迁移与升级](/image/migration)。
-6. 启动新版本，确认四个端口的 `/healthz` 返回 200。已有实例不需要重复执行 seed。
+6. 启动新版本，确认四个模块的健康检查返回 200，地址见[健康检查](/deploy/production)。已有实例不需要重复执行 seed。
 
 ## 需要留意的迁移
 

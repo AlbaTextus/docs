@@ -20,7 +20,7 @@ release/              本地构建与发布产物
 
 | 命令 | 用途 |
 | --- | --- |
-| `npm run server:dev` | 一个进程启动 OAuth 8001、image 8002、creatplat 8004、ATHub 8005 |
+| `npm run server:dev` | 一个进程启动 OAuth 8001、image 8002、creatplat 8004、ATHub 8005 和聚合端口 8288 |
 | `npm run test:go` | 运行正式 Go 代码及所有业务模块测试，排除 temp 中的过程脚本 |
 | `npm run db:athub:deploy` | 应用内容库迁移 |
 | `npm run db:creatplat:deploy` | 应用创作者独立库迁移 |

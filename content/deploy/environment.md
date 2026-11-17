@@ -12,6 +12,7 @@ Go 服务从仓库根目录 `.env` 加载配置，已有进程环境变量优先
 | `ATHUB_HTTP_ADDR` | ATHub 监听地址，默认 `:8005` |
 | `CREATPLAT_HTTP_ADDR` | 创作者平台监听地址，默认 `:8004` |
 | `IMAGE_HTTP_ADDR` | 图床监听地址，默认 `:8002` |
+| `GATEWAY_HTTP_ADDR` | 聚合端口监听地址，默认 `:8288`；按路径前缀把请求交给上面四个模块，见[聚合端口](/deploy/production) |
 | `IMAGE_DATABASE_URL` | 必填，独立图床 PostgreSQL 数据库 |
 | `IMAGE_LOCAL_ROOT` | 必填，已有图床文件目录 |
 | `IMAGE_PUBLIC_URL` | 图床公开根地址 |
