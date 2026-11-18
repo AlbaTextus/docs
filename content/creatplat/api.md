@@ -87,7 +87,7 @@
 {
   "id": 40,
   "novelId": 10,
-  "url": "https://img.example.com/book/10/illustration-1.jpg",
+  "url": "https://img.example.com/file/book/10/illustrations/illustration-1.jpg",
   "sha256": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
   "width": 1200,
   "height": 1800,

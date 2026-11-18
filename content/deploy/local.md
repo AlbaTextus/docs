@@ -49,7 +49,7 @@ WEBAUTHN_RP_ORIGINS=http://localhost:3288
 docker compose up -d postgres athub-postgres creatplat-postgres
 ```
 
-创作者数据库先执行 `npm run db:creatplat:deploy`；已有安装须停止旧后端后执行 `npm run db:creatplat:import`，核对通过再启动新版本。完整步骤见 [DATABASE.md](/creatplat/database)。数据库就绪后执行：
+创作者数据库先执行 `npm run db:creatplat:deploy`；已有安装须停止旧后端后执行 `npm run db:creatplat:import`，核对通过再启动新版本。完整步骤见[创作者平台数据库](/creatplat/database)。数据库就绪后执行：
 
 ```bash
 pnpm db:deploy
@@ -57,11 +57,11 @@ npm run db:athub:deploy
 pnpm db:seed
 ```
 
-`db:deploy` 应用全部已提交的迁移。`db:seed` 是开发初始化命令，会创建或更新以下账户和示例客户端：
-
-`db:athub:deploy` 只迁移内容库。迁移前备份数据库；其中保留的
+`db:deploy` 应用账户库全部已提交的迁移。`db:athub:deploy` 只迁移内容库。迁移前备份数据库；其中保留的
 `20261103000000_remove_user_api` 会删除旧 `ApiUser`、`ApiKey` 和 `ApiUsage` 表及数据，
 保留内容数据。图床库按 [图床迁移说明](/image/migration) 建在现有 PostgreSQL 实例中，设置 `IMAGE_DATABASE_URL` 和已有对象目录后执行 `npm run db:image:deploy`；升级现有 SQLite 图床还需停写备份并执行 `npm run db:image:import`。统一服务检查账户、内容、创作者和图床四套数据库，任何一套初始化失败都不会开始监听。
+
+`db:seed` 是开发初始化命令，会创建或更新以下账户和示例客户端：
 
 | 项目 | 默认值 |
 | --- | --- |

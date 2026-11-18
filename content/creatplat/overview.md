@@ -2,7 +2,7 @@
 
 本模块负责投稿、审核、修订、贡献历史与相关查询。统一服务通过聚合入口（默认 `8010`，由 `GATEWAY_HTTP_ADDR` 配置）提供 `/api/v4/*`。
 
-**本模块使用独立 PostgreSQL 数据库**，由必填的 `CREATPLAT_DATABASE_URL` 配置，不回退到账户库。建库、迁移、核对与回退步骤见 [DATABASE.md](/creatplat/database)。
+**本模块使用独立 PostgreSQL 数据库**，由必填的 `CREATPLAT_DATABASE_URL` 配置，不回退到账户库。建库、迁移、核对与回退步骤见[独立数据库](/creatplat/database)。
 
 页面入口与审核流程见[投稿、编辑与审核](/creatplat/workflow)，接口见[接口一览](/creatplat/api)。
 
