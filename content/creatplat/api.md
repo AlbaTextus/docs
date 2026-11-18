@@ -8,6 +8,7 @@
 | --- | --- | --- |
 | GET | `/api/v4/healthz` | 创作者库和账户库都可用时返回 `{"status":"ok"}`，否则返回 503 |
 | GET | `/api/v4/history?novelId=2&limit=20&offset=0` | 分页读取一部作品的变更历史 |
+| GET | `/api/v4/history?novelId=2&revision={id}&limit=100&offset=0` | 分页读取其中一条历史的全部变更 |
 | GET | `/api/v4/contributors?novelId=2` | 读取作品的创建者与后续贡献者 |
 | POST | `/api/v4/account/athub/submissions` | 提交小说 |
 | GET | `/api/v4/account/athub/submissions` | 自己的提交列表 |
@@ -28,6 +29,8 @@
 - `/api/v4/account/*` 和 `/api/v4/admin/*` 使用网站登录会话；提交小说时会话 Cookie 缺失、过期或已撤销返回 `401 login_required`。
 - `/api/v4/admin/*` 还要求管理员账户，其他账户会被拒绝。
 - 历史、贡献者、插图列表和插图布局的 `GET` 请求接受网站会话或个人 Key。
+- 历史列表把同一账户连续的修改合并为一条。每条的 `changes` 最多带前 100 处变更，且不含章节正文差异 `bodyDiff`；`changeCount` 是这一条的变更总数，`changeStats` 按 `entity`、`action` 给出各类变更的数量。
+- 需要完整变更时带上 `revision`（列表中该条的 `id`）逐页读取，返回 `{ "changes": [...], "total": n }`，按修改先后排列并包含 `bodyDiff`；`limit` 取 1 至 100，默认 20。`revision` 不是 UUID 返回 `400 invalid_revision`，这部作品没有这条历史返回 `404 revision_not_found`。
 - 封面上传和插图上传也接受个人 Key，见下文「用个人 Key 上传」。删除插图、保存布局及其余 `/api/v4/account/*` 接口只接受网站登录会话。
 - 以网站会话发起的修改请求校验客户端标记与来源；聚合入口允许配置的账户页面来源携带 Cookie 跨端口访问。
 - 每项操作仍受账户等级的接口权限约束，见 [ATHub 密钥与权限](/oauth/athub-key)。
