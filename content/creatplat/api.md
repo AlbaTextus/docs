@@ -29,6 +29,7 @@
 - `/api/v4/account/*` 和 `/api/v4/admin/*` 使用网站登录会话；提交小说时会话 Cookie 缺失、过期或已撤销返回 `401 login_required`。
 - `/api/v4/admin/*` 还要求管理员账户，其他账户会被拒绝。
 - 历史、贡献者、插图列表和插图布局的 `GET` 请求接受网站会话或个人 Key。
+- 历史和贡献者中的头像是账户当前的头像，账户已不存在时保留记录时的地址。
 - 历史列表把同一账户连续的修改合并为一条。每条的 `changes` 最多带前 100 处变更，且不含章节正文差异 `bodyDiff`；`changeCount` 是这一条的变更总数，`changeStats` 按 `entity`、`action` 给出各类变更的数量。
 - 需要完整变更时带上 `revision`（列表中该条的 `id`）逐页读取，返回 `{ "changes": [...], "total": n }`，按修改先后排列并包含 `bodyDiff`；`limit` 取 1 至 100，默认 20。`revision` 不是 UUID 返回 `400 invalid_revision`，这部作品没有这条历史返回 `404 revision_not_found`。
 - 封面上传和插图上传也接受个人 Key，见下文「用个人 Key 上传」。删除插图、保存布局及其余 `/api/v4/account/*` 接口只接受网站登录会话。
@@ -74,7 +75,7 @@
 }
 ```
 
-返回的地址再作为小说元信息的 `coverUrl` 提交。图片不是有效图片或超出限制返回 `400 cover_invalid`；封面上传暂不可用返回 `503 cover_upload_unavailable`；保存到图床失败返回 `502 cover_upload_failed`。
+返回的地址再作为小说元信息的 `coverUrl` 提交。作品换用新封面后，旧封面文件在不再被使用时会从图床删除，之后再提交旧地址会被内容接口拒绝（`422`）。图片不是有效图片或超出限制返回 `400 cover_invalid`；封面上传暂不可用返回 `503 cover_upload_unavailable`；保存到图床失败返回 `502 cover_upload_failed`。
 
 接受 JPG、PNG、WebP、GIF（GIF 取首帧），单边不超过 8192 像素、总像素不超过 1600 万。保存前去除元数据，按原比例缩小到最长边 1600 像素以内并转为 JPEG，透明区域填白底。
 
@@ -84,7 +85,7 @@
 
 ### 上传并关联
 
-`POST /api/v4/account/athub/novels/{id}/illustrations` 接收 `multipart/form-data` 的单个 `file` 字段，每次一张。`{id}` 是作品 ID，请求不带查询参数。**一次上传就完成存图和登记，不需要再调用其他接口。** 直接生效时返回 `201` 和插图对象；需要审核时返回 `202` 和 `{"status":"pending","review_id":"…"}`，审核通过后才关联到作品。
+`POST /api/v4/account/athub/novels/{id}/illustrations` 接收 `multipart/form-data` 的单个 `file` 字段，每次一张。`{id}` 是作品 ID，请求不带查询参数。**一次上传就完成存图和登记，不需要再调用其他接口。** 直接生效时返回 `201` 和插图对象；需要审核时返回 `202` 和 `{"status":"pending","review_id":"…"}`，审核通过后才关联到作品；被驳回或通过时被拒绝的，已保存的图片会从图床删除。同一作品重复上传同一张图片时返回已有的插图对象，不保留新文件。
 
 ```json
 {
