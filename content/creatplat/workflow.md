@@ -6,7 +6,7 @@
 
 ## 审核流程
 
-需审核的内容写入返回 HTTP `202` 以及 `review_id`、`status: "pending"`，此时正式书库尚未变化。LT3、LT4 可在审核中心查看提交并通过或驳回；不能审核自己的提交，也不能借审核执行自己无权进行的操作。通过后应用原提交，保留提交者作为历史贡献者；驳回原因与审核结果会保存。重复或并发审核不会重复写入内容。提交者可通过 `/api/v4/account/athub/submissions` 及 `/{id}` 查询自己的状态和结果，审核接口为 `/api/v4/admin/athub/reviews`。
+需审核的内容写入先在内容库里预演一遍并回滚：按当前数据就会被拒绝的提交（作品不存在、字段无效、冲突等）直接返回与免审写入相同的 4xx，不进入审核队列；预演不保存内容、不产生修订记录。预演通过的返回 HTTP `202` 以及 `review_id`、`status: "pending"`，此时正式书库尚未变化。预演只反映提交当时的数据，通过审核时仍按当时的正式内容执行，期间的其他修改不会被检测。LT3、LT4 可在审核中心查看提交并通过或驳回；不能审核自己的提交，也不能借审核执行自己无权进行的操作。通过后应用原提交，保留提交者作为历史贡献者；驳回原因与审核结果会保存。重复或并发审核不会重复写入内容。提交者可通过 `/api/v4/account/athub/submissions` 及 `/{id}` 查询自己的状态和结果，审核接口为 `/api/v4/admin/athub/reviews`。
 
 哪些等级需要审核、哪些操作被禁止，由管理员在账户模块配置，见 [ATHub 密钥与权限](/oauth/athub-key)。
 
@@ -18,6 +18,6 @@
 
 编辑模式下，插图面板上方为展示画布，下方为当前作品的图片资源。将资源拖入画布后，拖动图片块内部调整位置，拖动四边或四角调整大小；靠近其他块的边缘时吸附并显示对齐线。移出画布保留图片资源，删除资源则同时清理画布引用。布局可在插图面板单独保存，也随顶部「保存修改」一起提交，取消修改还原未保存布局。浏览状态按已保存布局展示；未设置布局的作品沿用图片列表。
 
-插图列表和上传分别使用 `GET`、`POST /api/v4/account/athub/novels/{id}/illustrations`，删除使用 `DELETE /api/v4/account/athub/novels/{id}/illustrations/{illustrationId}`。上传后服务端直接登记，需审核的在通过后生效。资源操作单独提交，取消资料编辑不会撤销已提交的上传或删除。布局在 `/api/v4/account/athub/novels/{id}/illustration-layout` 用 `GET` 读取、用 `PUT` 保存。保存校验作品资源归属与布局版本；旧版本返回 409，避免覆盖他人的调整。待审核期间继续展示正式数据。上线前应用模块迁移 `20261115010000_illustration_layout`。
+插图列表和上传分别使用 `GET`、`POST /api/v4/account/athub/novels/{id}/illustrations`，删除使用 `DELETE /api/v4/account/athub/novels/{id}/illustrations/{illustrationId}`。上传后服务端直接登记，需审核的在通过后生效。图片要先保存才能登记；登记被拒绝（4xx，例如作品不存在）时，已保存的图片随即删除，5xx 结果未知时保留。资源操作单独提交，取消资料编辑不会撤销已提交的上传或删除。布局在 `/api/v4/account/athub/novels/{id}/illustration-layout` 用 `GET` 读取、用 `PUT` 保存。保存校验作品资源归属与布局版本；旧版本返回 409，避免覆盖他人的调整。待审核期间继续展示正式数据。上线前应用模块迁移 `20261115010000_illustration_layout`。
 
 插图上传的图片格式、尺寸限制和归一化规则见 [ATHub 模块与数据库](/athub/module)。服务端程序可以用个人 Key 调用同一个上传接口，见[接口一览](/creatplat/api)。

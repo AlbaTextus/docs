@@ -33,7 +33,7 @@
 
 跨库写入先在创作者库保存 pending 记录，再提交小说事务，最后确认历史为 completed；
 准备记录失败会回滚小说写入。只有 completed 记录用于历史页与贡献统计，
-内容提交与历史确认之间发生崩溃或服务库中断时，pending 记录保留供核对，不冒充已完成记录。
+内容提交与历史确认之间发生崩溃或服务库中断时，请求本身仍按成功返回，pending 记录保留，不冒充已完成记录。内容事务会在 ATHub 库的 `RevisionReceipt` 写入同一批次号；后台每 5 分钟核对停留超过 10 分钟的 pending 批次：有回执的改为 completed，没有的改为 failed。回执保留 7 天后清理。上线前应用 ATHub 模块迁移 `20261118000000_revision_receipts`（`npm run db:athub:deploy`），否则服务拒绝启动。
 
 ## 源码结构
 

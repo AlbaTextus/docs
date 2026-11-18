@@ -62,6 +62,7 @@ npm run db:image:deploy
 | 内容库 | `20261116000000_novel_abandoned_status` | 小说状态 `ABANDONED` |
 | 内容库 | `20261117000000_novel_list_indexes`、`20261117010000_chapter_word_count`、`20261117020000_author_name_indexes` | 列表索引、章节字数生成列与作者姓名索引；全书目录的 `wordCount` 依赖其中的字数列 |
 | 内容库 | `20261117030000_chapter_content_digest` | 章节正文的摘要与长度生成列 `contentHash`、`contentLength`，记录修订历史时不必读取正文；新版本启动时要求这两列存在。迁移会重写一次章节表并回填已有章节，章节多时耗时较长 |
+| 内容库 | `20261118000000_revision_receipts` | 修订批次回执表 `RevisionReceipt`，用于核对内容已提交但历史未确认的修订；新版本启动时要求该表存在，见[创作者平台模块概览](/creatplat/overview) |
 | 创作者库 | `20261116010000_creator_database` | 建立独立创作者库的审核与历史表 |
 | 图床库 | `20261116020000_image_database` | 建立独立图床库；账户库同时需要 `20261116020000_image_api_keys` |
 | 图床库 | `20261117020000_image_list_order` | 重建文件列表的时间索引，使其与列表的排序方式一致 |

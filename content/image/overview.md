@@ -9,11 +9,11 @@
 ## 认证与接口
 
 - 注入 OAuth 的 `auth.Verifier`，直接校验同一 Cookie session，不建立另一套图床登录会话。
-- 普通已登录账户可上传；管理员可列表、管理、删除。修改请求携带 `X-AlbaTextus-Client: account-center`，来源受宿主 CORS/CSRF 约束。
+- Cookie session 只对管理员开放：管理员可上传、列表、管理、删除；其他账户调用这些接口一律返回 `403 permission_denied`，它们的头像、背投、封面和插图只经下述同进程调用保存。修改请求携带 `X-AlbaTextus-Client: account-center`，来源受宿主 CORS/CSRF 约束。
 - 外部 Key 在 OAuth 账户库按 SHA-256 存储，由 `GET/POST/PUT/DELETE /api/v1/admin/image/keys` 管理，创建时仅返回一次明文。`upload/list/delete/manage` 为独立权限。
 - 支持 `Authorization: Bearer <Key>` 和旧版直接放置 Key 的格式。无效 Key 不回退到 Cookie；过期、撤销、权限不足均拒绝。
 - `/file/` 读取公开，`Block` 文件禁止公开读取。`?from=admin` 预览要求管理员 session 或 `manage` Key。
-- 同进程的 OAuth 与 creatplat 在校验登录会话和权限后直接调用图床保存头像、背投、封面和插图，不经 HTTP 和 Key，结果与分类上传接口相同。creatplat 的封面和插图上传也可以凭 ATHub 个人 Key 调用，校验的是该 Key 及其账户等级权限，与这里的外部 Key 无关。这条路径不记录上传 IP，也不应用 IP 黑名单。外部 Key 只用于进程外的调用方。
+- 同进程的 OAuth 与 creatplat 在校验登录会话和权限后直接调用图床保存头像、背投、封面和插图，不经 HTTP 和 Key，结果与分类上传接口相同。creatplat 的封面和插图上传也可以凭 ATHub 个人 Key 调用，校验的是该 Key 及其账户等级权限，与这里的外部 Key 无关。这条路径不记录上传 IP，也不应用 IP 黑名单。文件元数据的 `Uploader` 记录保存者：同进程调用为 `user:<账户 ID>`，接口上传为 `user:<账户 ID>` 或 `key:<Key ID>`；此前上传的文件没有该字段。更换背投后，旧背投及其原图会被删除；更换头像只删除旧的未裁剪原图，旧头像保留（修订历史保存了贡献者当时的头像地址）；旧封面不删除（历史记录和待审提交可能仍引用）。外部 Key 只用于进程外的调用方。
 
 | 能力 | 新接口（均加 `/api/v2`） |
 | --- | --- |
