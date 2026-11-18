@@ -1,15 +1,15 @@
 # 服务总览
 
-atnexus 是 ALBATEXTUS 的统一服务，当前由一个 Go 程序运行四个模块：
+atnexus 是 ALBATEXTUS 的统一服务。一个 Go 程序运行四个模块，后端只监听聚合端口 `8010`（`GATEWAY_HTTP_ADDR`），按路径前缀分发请求：
 
-| 模块 | 本地默认监听 | 公开业务前缀 | 职责 |
-| --- | --- | --- | --- |
-| `modules/oauth/` | `8001` | `/api/v1` | 账户、session、OAuth 与外部 API Key 管理/校验 |
-| `modules/image/` | `8002` | `/api/v2` | 图床上传、文件管理、本地/S3 存储 |
-| `modules/creatplat/` | `8004` | `/api/v4` | 投稿、审核、历史、修订 |
-| `modules/athub/` | `8005` | `/api/v5` | 书库与正式内容 |
+| 模块 | 公开路径前缀 | 职责 |
+| --- | --- | --- |
+| `modules/oauth/` | `/api/v1`、`/oauth`、`/.well-known` | 账户、session、OAuth 与外部 API Key 管理/校验 |
+| `modules/image/` | `/api/v2`、`/file` | 图床上传、文件管理、本地/S3 存储 |
+| `modules/creatplat/` | `/api/v4` | 投稿、审核、历史、修订 |
+| `modules/athub/` | `/api/v5` | 书库与正式内容 |
 
-同一个程序还监听聚合端口 `8288`，按上表的路径前缀把请求交给对应模块，反向代理只需要一个上游，见[聚合端口](/deploy/production)。
+反向代理只需一个 API 上游，见[聚合端口](/deploy/production)。
 
 image 已将原 imgbed 后端改写为 Go，元数据迁入独立 PostgreSQL，原图床前端保持原样；library 已取消；other 未指定业务，暂不启动。
 OAuth、ATHub、创作者平台和图床分别使用自己的数据库，可位于同一 PostgreSQL 实例。图床保留原 `/file/` 文件地址。迁移与恢复说明见 [image 模块](/image/overview)，完整实施边界见 [重构计划](https://github.com/AlbaTextus/atnexus/blob/main/atnpan-ban.md)。

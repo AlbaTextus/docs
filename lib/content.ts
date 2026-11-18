@@ -59,7 +59,7 @@ export function buildDocument(service: string, slug: string, source: string): Do
 
 ATHub 服务地址为 \`${ATHUB_API_URL}\`。以下所有接口统一使用此地址，且必须携带 \`Authorization: Bearer <ATHUB_API_TOKEN>\` 请求头。
 
-先登录账户，在 \`POST /api/v1/account/key\` 创建自己的 ATHub Key。创建时只返回一次明文，将它保存到调用端的 \`ATHUB_API_TOKEN\` 环境变量。所有内容路径统一以 \`/api/v5/\` 开头；账户与 OAuth 功能使用 \`/api/v1/\`。两者在同一 Go 进程中分别监听 \`8001\`（OAuth）和 \`8005\`（ATHub），数据库分别配置。
+先登录账户，在 \`POST /api/v1/account/key\` 创建自己的 ATHub Key。创建时只返回一次明文，将它保存到调用端的 \`ATHUB_API_TOKEN\` 环境变量。内容接口使用 \`/api/v5/\`，账户接口使用 \`/api/v1/\`。两者共用后端的聚合端口（自托管默认 \`8010\`），数据库分别配置。
 
 > 个人 Key 目前可读写共享内容库，不按用户隔离小说。请仅在服务端或采集程序中使用，切勿放入网页或公开客户端。Key 和调用记录保存在账户库；文档站不会代发 API 请求或保存你的密钥。
 

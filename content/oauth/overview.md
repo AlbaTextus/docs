@@ -2,7 +2,7 @@
 
 本模块负责账户认证、OAuth 授权、第三方登录、Passkey、邮箱、人机验证，以及外部 API Key 的管理与凭据校验。
 
-统一服务在本地默认 `8001` 挂载 `/api/v1/*`，协议端点 `/oauth/*` 和发现端点保持原路径。`OAUTH_HTTP_ADDR` 可覆盖监听地址，兼容原 `HTTP_ADDR`。
+统一服务在聚合入口（默认 `8010`，由 `GATEWAY_HTTP_ADDR` 配置）提供 `/api/v1/*`。OAuth 协议端点 `/oauth/*` 和发现端点 `/.well-known/*` 保持原路径。
 
 各项能力分别见[登录与账户](/oauth/login)、[邮箱认证](/oauth/email)、[应用接入](/oauth/integration)、[ATHub 密钥与权限](/oauth/athub-key)、[站点开关与维护](/oauth/site)和[接口一览](/oauth/api)。
 

@@ -25,17 +25,13 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ```dotenv
 DATABASE_URL=postgresql://oauth:oauth@localhost:5432/oauth?sslmode=disable
 ATHUB_DATABASE_URL=postgresql://athub:athub@localhost:5433/athub?sslmode=disable
-HTTP_ADDR=:8001
-ATHUB_HTTP_ADDR=:8005
-CREATPLAT_HTTP_ADDR=:8004
-IMAGE_HTTP_ADDR=:8002
-# 聚合端口：按路径前缀访问上面四个模块。
-GATEWAY_HTTP_ADDR=:8288
+# 唯一的后端监听地址，按路径前缀分发给四个模块。
+GATEWAY_HTTP_ADDR=:8010
 # 独立图床库；使用实际连接和已有文件目录。
 IMAGE_DATABASE_URL=
 IMAGE_LOCAL_ROOT=
 IMAGE_TEMP_ROOT=temp/image
-IMAGE_PUBLIC_URL=http://localhost:8002
+IMAGE_PUBLIC_URL=http://localhost:8010
 ISSUER_URL=http://localhost:3288
 AUTH_UI_URL=http://localhost:3288
 COOKIE_SECURE=false
@@ -94,10 +90,10 @@ go run ./cmd/server
 pnpm web:dev
 ```
 
-访问 [首页](http://localhost:3288/)、[登录页](http://localhost:3288/login) 或 [用户中心](http://localhost:3288/account)。OAuth 监听 `8001`，图床 `8002`，创作者平台 `8004`，ATHub `8005`，四个模块的健康检查在各自的版本前缀下，例如 `http://localhost:8001/api/v1/healthz`。内容接口例如 `http://localhost:8005/api/v5/content?novelId=1&order=1`。四个模块也可以统一从聚合端口 `8288` 访问，例如 `http://localhost:8288/api/v5/content?novelId=1&order=1`。
+访问 [首页](http://localhost:3288/)、[登录页](http://localhost:3288/login) 或 [用户中心](http://localhost:3288/account)。后端只监听 `8010`，例如 `http://localhost:8010/api/v1/healthz` 用于检查账户模块，`http://localhost:8010/api/v5/content?novelId=1&order=1` 用于访问内容接口。
 
-账户前端通过 `localhost:3288` 访问：Next.js 将 `/api/v1/*`、`/oauth/*` 和 `/.well-known/*` 转发至 `OAUTH_BACKEND_URL`（默认 `http://localhost:8001`），将创作者操作 `/api/v4/*` 转发至 `CREATPLAT_BACKEND_URL`（默认 `http://localhost:8004`）。Key 管理和暂未进一步拆分的统计接口继续通过账户入口提供。不要混用 `localhost` 和 `127.0.0.1`，否则 Cookie 和 Passkey 的来源校验可能不一致。
+Next.js 将 `/api/v1/*`、`/oauth/*` 和 `/.well-known/*` 转发至 `OAUTH_BACKEND_URL`，将创作者操作 `/api/v4/*` 转发至 `CREATPLAT_BACKEND_URL`。两个地址都默认指向 `http://localhost:8010`。Key 管理和统计继续通过账户入口访问。浏览器中不要混用 `localhost` 和 `127.0.0.1`，否则 Cookie 和 Passkey 的来源校验可能不一致。
 
-小说内容 `/api/v5/*` 不经过 Next.js 转发。浏览器使用 `NEXT_PUBLIC_ATHUB_API_URL` 直连 ATHub（本地 `http://localhost:8005`），历史查询使用 `NEXT_PUBLIC_CREATPLAT_API_URL`（本地 `http://localhost:8004`）；两个变量都需在前端构建前配置。生产入口须与账户页面共享 Cookie 主机范围。
+小说内容 `/api/v5/*` 和历史查询 `/api/v4/*` 分别使用 `NEXT_PUBLIC_ATHUB_API_URL` 和 `NEXT_PUBLIC_CREATPLAT_API_URL` 从浏览器直连聚合入口，本地都填写 `http://localhost:8010`。两个变量都需在前端构建前配置。生产入口须与账户页面共享 Cookie 主机范围。
 
 `pnpm web:dev` 默认使用 Turbopack。中文字体的 `regular.css` 和 `medium.css` 在 `web/app/layout.tsx` 中作为独立 CSS 入口加载，不要再通过 `web/styles/base/fonts.css` 的 `@import` 合并。Windows 本地环境中，两套分片字体及其 source map 合并为大型 PostCSS IPC 结果时会卡住首次编译；分离入口保留相同的字体、字重和样式，并缩小单次转换结果。

@@ -1,6 +1,6 @@
 # 模块概览
 
-该模块由根 Go module 管理，通过 `cmd/server` 与 OAuth、creatplat、ATHub 在同一进程运行。业务 API 位于 `8002/api/v2`，文件仍以 `/file/<原文件 ID>` 访问，也支持 `/api/v2/file/<ID>`。原 imgbed 前端保持原样，本次没有迁移它的页面、构建或交互。
+该模块由根 Go module 管理，通过 `cmd/server` 与 OAuth、creatplat、ATHub 在同一进程运行。业务 API 位于聚合端口 `8010` 的 `/api/v2`；文件可通过同一端口的 `/file/<原文件 ID>` 或 `/api/v2/file/<ID>` 访问。原 imgbed 前端保持原样，本次没有迁移它的页面、构建或交互。
 
 图片元数据使用独立 PostgreSQL 数据库；本地文件仍使用已有存储目录，S3 对象继续按渠道及原对象键读取。独立数据库可以建在已有 PostgreSQL 实例中，无需另开数据库服务。启动时检查实际数据库身份，拒绝将图床指向账户、内容或创作者库。
 

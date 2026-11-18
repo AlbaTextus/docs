@@ -13,18 +13,17 @@ ATHub 工作目录。单独修改、测试模块后，由宿主重新编译发�
 
 ## 当前宿主入口
 
-ATN 主服务现在对外使用 `8005/api/v5/*`，由 `ATHUB_HTTP_ADDR` 配置。
+ATN 主服务通过聚合入口的 `/api/v5/*` 提供正式内容，默认端口 `8010`，由 `GATEWAY_HTTP_ADDR` 配置。
 本模块引擎仍使用 v2 路由，宿主通过边界适配转换并修正响应 Location；不重写已有权限和审计标签。
 站内访问直接校验 OAuth session Cookie，外部 API Key 的管理和凭据校验也由 OAuth 提供。
-审核、历史和修订的业务实现归 `modules/creatplat/`，公开入口为 `8004/api/v4/*`。
+审核、历史和修订的业务实现归 `modules/creatplat/`，公开入口为同一端口下的 `/api/v4/*`。
 图片文件由[图床模块](/image/overview)保存。
 
 以下列出宿主对外的 v5 接口；内容引擎内部继续保留 v2 契约，由宿主转换。
 
 ## HTTP 接口
 
-宿主在同一进程中启动四个监听器：OAuth 使用 `8001`、图床使用 `8002`、creatplat 使用 `8004`、本模块对外使用 `8005`
-（可由 `ATHUB_HTTP_ADDR` 修改）。公开内容接口使用 `/api/v5/`：
+OAuth、图床、创作者平台和 ATHub 在同一进程中共用聚合监听。公开内容接口使用 `/api/v5/`：
 
 | 路径 | 方法 |
 | --- | --- |
@@ -37,7 +36,7 @@ ATN 主服务现在对外使用 `8005/api/v5/*`，由 `ATHUB_HTTP_ADDR` 配置�
 | `/api/v5/content` | GET、PUT、DELETE |
 | `/api/v5/upload` | POST |
 
-外部 Key 请求使用 `Authorization: Bearer <API_KEY>`。登录用户在 OAuth `8001/api/v1/account/key`
+外部 Key 请求使用 `Authorization: Bearer <API_KEY>`。登录用户在账户接口 `/api/v1/account/key`
 自动生成唯一的永久 Key，支持重置和停用；宿主注入的鉴权与记账中间件校验归属、当前 Key、停用状态和用户启用状态。
 Key 只在生成或重置时显示明文，账户库只保存 SHA-256 哈希。停用后不会自动恢复，重置保留历史调用记录。
 原全局密钥、OAuth access token 和旧个人密钥不能替代新 Key。
@@ -147,9 +146,9 @@ ATHub 保留自己的存储实现、测试和 Prisma 迁移；Go 依赖统一由
 维护内容功能时修改该目录，再重新构建统一程序。普通 Git 克隆即可取得全部源码，
 不需要相邻 ATHub 目录或初始化子模块。原 ATHub 工作目录保留。
 
-v5 的外部调用使用登录用户在 `8001/api/v1/account/key` 创建的个人 API Key，由 OAuth 统一管理与校验；
+v5 的外部调用使用登录用户在 `/api/v1/account/key` 创建的个人 API Key，由 OAuth 统一管理与校验；
 站内调用使用 OAuth session Cookie，不接受原全局密钥或用 OAuth access token 替代 session。
 每个 Key 归属一个用户，创建时仅返回一次明文，账户库只保存哈希。
 账户维护模式沿用 v1 范围；内容请求不经过账户维护拦截。
-`8001/api/v1/healthz` 检查账户库，账户维护状态仍返回 `433`；`8005/api/v5/healthz` 检查内容库，不需要 Key，也不计入调用记录，
-数据库不可用返回 `503`。任一端口绑定失败会释放已绑定端口并退出整个程序。
+在聚合入口访问 `/api/v1/healthz` 检查账户库，账户维护状态仍返回 `433`；访问 `/api/v5/healthz` 检查内容库，不需要 Key，也不计入调用记录。
+数据库不可用返回 `503`；聚合端口绑定失败时程序退出。

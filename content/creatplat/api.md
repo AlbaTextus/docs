@@ -1,6 +1,6 @@
 # 接口一览
 
-创作者平台的接口挂在 `8004` 的 `/api/v4/` 下，路由定义以 [modules/creatplat/api/api.go](https://github.com/AlbaTextus/atnexus/blob/main/modules/creatplat/api/api.go) 为准。网站通过 Next.js 转发投稿、编辑和审核操作，历史、贡献者和插图查询由浏览器直连。封面上传、插图上传及插图和布局查询也接受个人 Key。
+创作者平台的接口位于聚合入口（默认 `8010`）的 `/api/v4/` 下，路由定义以 [modules/creatplat/api/api.go](https://github.com/AlbaTextus/atnexus/blob/main/modules/creatplat/api/api.go) 为准。网站通过 Next.js 转发投稿、编辑和审核操作，历史、贡献者和插图查询由浏览器直连。封面上传、插图上传及插图和布局查询也接受个人 Key。
 
 ## 接口
 
@@ -29,7 +29,7 @@
 - `/api/v4/admin/*` 还要求管理员账户，其他账户会被拒绝。
 - 历史、贡献者、插图列表和插图布局的 `GET` 请求接受网站会话或个人 Key。
 - 封面上传和插图上传也接受个人 Key，见下文「用个人 Key 上传」。删除插图、保存布局及其余 `/api/v4/account/*` 接口只接受网站登录会话。
-- 以网站会话发起的修改请求校验客户端标记与来源；`8004` 允许配置的账户页面来源携带 Cookie 跨端口访问。
+- 以网站会话发起的修改请求校验客户端标记与来源；聚合入口允许配置的账户页面来源携带 Cookie 跨端口访问。
 - 每项操作仍受账户等级的接口权限约束，见 [ATHub 密钥与权限](/oauth/athub-key)。
 
 ## 提交与审核列表
@@ -127,16 +127,16 @@
 
 ## 用个人 Key 上传
 
-封面上传和插图上传除了网站登录会话，还接受 ATHub 个人 Key，供服务端程序或采集脚本直接上传图片文件。请求格式、图片限制和成功响应与上面两节相同，凭据改为 `Authorization: Bearer <api_key>`。下面以本地默认的 `8004` 为例：
+封面上传和插图上传除了网站登录会话，还接受 ATHub 个人 Key，供服务端程序或采集脚本直接上传图片文件。请求格式、图片限制和成功响应与上面两节相同，凭据改为 `Authorization: Bearer <api_key>`。下面以本地聚合端口 `8010` 为例：
 
 ```bash
-curl --request POST 'http://127.0.0.1:8004/api/v4/account/athub/cover' \
+curl --request POST 'http://127.0.0.1:8010/api/v4/account/athub/cover' \
   --header "Authorization: Bearer $ATHUB_API_TOKEN" \
   --form 'file=@cover.jpg'
 ```
 
 ```bash
-curl --request POST 'http://127.0.0.1:8004/api/v4/account/athub/novels/10/illustrations' \
+curl --request POST 'http://127.0.0.1:8010/api/v4/account/athub/novels/10/illustrations' \
   --header "Authorization: Bearer $ATHUB_API_TOKEN" \
   --form 'file=@illustration.jpg'
 ```
@@ -149,4 +149,4 @@ curl --request POST 'http://127.0.0.1:8004/api/v4/account/athub/novels/10/illust
 - 调用写入 ATHub 调用记录并计入 Key 的累计次数。界面按 `/api/v4` 路径展示。Key 通过核对后才发现的问题（如作品 ID 无效、图片不合格、图床保存失败）同样计一次调用。
 - 封面按「上传 / 新建 · 封面」判断，不进入审核。插图沿用「上传 / 新建 · 插图」的权限、审核和贡献历史。
 
-`/api/v4` 由创作者平台提供：可以直接访问 `8004`，也可以经聚合端口 `8288` 或账户前端的 `/api/v4/*` 转发到达；只转发到 ATHub `8005` 的入口不提供这两个接口，见[生产部署与升级](/deploy/production)。接口面向服务端程序：请求带有不在允许列表中的 `Origin` 时返回 `403 invalid_origin`。
+`/api/v4` 由创作者平台提供，可以直接访问聚合端口 `8010`，也可经账户前端的 `/api/v4/*` 转发到达。若 API 域名按路径放行，需允许 `/api/v4`，见[生产部署与升级](/deploy/production)。接口面向服务端程序：请求带有不在允许列表中的 `Origin` 时返回 `403 invalid_origin`。

@@ -42,10 +42,10 @@ Windows 也可使用 PowerShell 入口：
 ```
 
 Linux 可运行 `bash scripts/build-linux-amd64.sh`。Corepack 未安装时先运行
-`npm install --global corepack`。构建前可设置 `OAUTH_BACKEND_URL`、
-`NEXT_PUBLIC_ATHUB_API_URL`、`NEXT_PUBLIC_WIKI_URL` 和 `NEXT_PUBLIC_CREDIT_URL`。
-默认后端地址为 `http://127.0.0.1:8001`，内容 API 为 `http://localhost:8005`，
-Wiki 和 Credit 分别为 `http://localhost:3200`、`http://localhost:3300`。
+`npm install --global corepack`。构建时，`OAUTH_BACKEND_URL` 和 `CREATPLAT_BACKEND_URL`
+默认都指向聚合入口 `http://127.0.0.1:8010`；浏览器使用的 `NEXT_PUBLIC_ATHUB_API_URL`
+和 `NEXT_PUBLIC_CREATPLAT_API_URL` 默认都是 `http://localhost:8010`。
+`NEXT_PUBLIC_WIKI_URL` 和 `NEXT_PUBLIC_CREDIT_URL` 分别默认为 `http://localhost:3200`、`http://localhost:3300`。
 本地 `.env` 文件不参与构建，公开地址和 Next.js 转发目标修改后需要重新构建。
 
 脚本复制当前工作目录源码（包括未提交的修改）到 `temp/`，安装锁定依赖并构建，
@@ -75,6 +75,6 @@ Wiki 和 Credit 分别为 `http://localhost:3200`、`http://localhost:3300`。
 | `database/account`、`database/content`、`database/creator`、`database/image` | 四套数据库的 Prisma schema 与迁移 |
 | `.env.example`、`README.txt`、`SHA256SUMS` | 配置样例、发布说明和逐文件校验清单 |
 
-解压后可用 `sha256sum -c SHA256SUMS` 校验文件。两个迁移工具同样需要可执行权限。前端启动脚本不读取后端的 `.env`；`OAUTH_BACKEND_URL` 和 `CREATPLAT_BACKEND_URL` 可以在启动前通过环境变量覆盖，默认分别为 `http://127.0.0.1:8001` 和 `http://127.0.0.1:8004`。
+解压后可用 `sha256sum -c SHA256SUMS` 校验文件。两个迁移工具同样需要可执行权限。启动后端前在其 `.env` 中设置 `GATEWAY_HTTP_ADDR=:8010`；前端默认监听 `3288`，其启动脚本不读取后端的 `.env`。
 
-构建前还可以设置 `CREATPLAT_BACKEND_URL` 与 `NEXT_PUBLIC_CREATPLAT_API_URL`（默认 `http://localhost:8004`）。`NEXT_PUBLIC_*` 地址在构建时写入前端，修改后需要重新构建。
+`OAUTH_BACKEND_URL` 也用于前端运行时的服务端账户请求，可以在启动前覆盖；Next.js 的转发目标与 `NEXT_PUBLIC_*` 地址仍需在构建前设置，改动后重新构建。

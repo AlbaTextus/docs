@@ -1,6 +1,6 @@
 # 模块概览
 
-本模块负责投稿、审核、修订、贡献历史与相关查询。统一服务在本地默认 `8004` 挂载 `/api/v4/*`，由 `CREATPLAT_HTTP_ADDR` 配置。
+本模块负责投稿、审核、修订、贡献历史与相关查询。统一服务通过聚合入口（默认 `8010`，由 `GATEWAY_HTTP_ADDR` 配置）提供 `/api/v4/*`。
 
 **本模块使用独立 PostgreSQL 数据库**，由必填的 `CREATPLAT_DATABASE_URL` 配置，不回退到账户库。建库、迁移、核对与回退步骤见 [DATABASE.md](/creatplat/database)。
 
@@ -14,8 +14,8 @@
 
 ## 历史与贡献者
 
-`8004/api/v4/history?novelId=2&limit=20&offset=0` 返回分页变更历史，
-`8004/api/v4/contributors?novelId=2` 返回真实创建者与后续贡献者。
+`/api/v4/history?novelId=2&limit=20&offset=0` 返回分页变更历史，
+`/api/v4/contributors?novelId=2` 返回真实创建者与后续贡献者。
 两个接口使用现有网站 session 或个人 Key 鉴权，浏览器直连后端；Next.js 不代理历史查询。
 作品详情的贡献者卡片链接到 `/library/books/2/history`，沿用现有组件、字体和面板。
 
