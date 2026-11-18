@@ -74,7 +74,7 @@ Cookie 和用户身份请求头均不能替代新 Key。Key 默认永久有效�
 | 文本 | `title` 和平台 `name` 去除首尾空白后不能为空；所有存储文本都禁止 NUL 字符 `\u0000`。 |
 | 正文 | 纯文本，保留换行、首尾空白和缩进，但不能全部为空白。无 HTML 渲染、TXT/EPUB 解析或编码转换。 |
 | 标签 | 每部小说的 `tagIds`、`tagNames` 各自最多 100 项；标签名去除首尾空白后最多 100 个 Unicode 字符。 |
-| 图片 | `coverUrl` 只存字符串，不接收图片二进制，也不会抓取远程封面。插图同样只登记已有图片的地址、校验值和尺寸，见第 12 节。 |
+| 图片 | `coverUrl` 只存字符串，不接收图片二进制，也不会抓取远程封面。封面文件上传与所有插图操作走 [创作者平台 `/api/v4`](/creatplat/api)。 |
 | 查询参数 | 拒绝未知键和同名参数重复出现，例如 `id=1&id=2`。 |
 | 请求时限 | 每次 API 处理的数据库上下文期限为 15 秒；上传是同步操作，不返回后台任务 ID。 |
 
@@ -119,13 +119,8 @@ Cookie 和用户身份请求头均不能替代新 Key。Key 默认永久有效�
 | PUT | `/api/v5/content` | 上传一个章节，不存在则新增、存在则覆盖 | 200 |
 | DELETE | `/api/v5/content?novelId=...&order=...` | 删除一个章节 | 204 |
 | POST | `/api/v5/upload` | 一次创建小说并导入卷/章节，或给已有小说批量续传 | 201 / 200 |
-| GET | `/api/v5/illustrations?novelId=...` | 获取一部小说的插图列表 | 200 |
-| POST | `/api/v5/illustrations?novelId=...` | 为小说关联一张已托管的插图 | 201 |
-| DELETE | `/api/v5/illustrations?novelId=...&id=...` | 删除一张插图，并从布局中移除 | 204 |
-| GET | `/api/v5/illustration-layout?novelId=...` | 获取小说的插图布局 | 200 |
-| PUT | `/api/v5/illustration-layout?novelId=...` | 整体保存插图布局 | 200 |
 
-除 `POST /api/v5/illustrations` 必须带 `novelId` 外，其他 POST 不带查询参数；`PUT /api/v5/volumes`、`PUT /api/v5/content` 也不带查询参数。
+POST 不带查询参数；`PUT /api/v5/volumes`、`PUT /api/v5/content` 也不带查询参数。
 不支持 PATCH。平台只提供获取与创建；作者支持获取、创建和修改姓名，没有删除接口。
 
 ## 3. 平台
@@ -309,7 +304,7 @@ URL 只允许必填查询键 `id`。请求体与 POST 完全相同。
 | `authorName` | string / null | 否 | 只写字段，用作者姓名代替 `authorId`。去除首尾空白后最多 200 个 Unicode 字符，禁止 NUL；省略、null、空串或纯空白视为未提供。在 `platformId` 下按姓名查找作者，同名时取 ID 最小的一位，找不到则在同一事务中新建。 |
 | `title` | string | 是 | 去除首尾空白后不能为空。书名不唯一，不按书名自动去重。 |
 | `summary` | string / null | 否 | 省略/null 保存为 null；空字符串与 null 不同。 |
-| `coverUrl` | string / null | 否 | 省略/null 保存为 null；不验证或下载图片。 |
+| `coverUrl` | string / null | 否 | 省略/null 保存为 null；不验证或下载图片。封面文件可先用个人 Key 上传到创作者平台的封面接口，再填入返回的地址，见[创作者平台接口](/creatplat/api)。 |
 | `status` | string | 否 | `ONGOING` 连载中、`COMPLETED` 已完结或 `ABANDONED` 已断更，区分大小写。省略/null/空字符串按 `ONGOING`。 |
 | `tagIds` | integer[] / null | 否 | 标签库中已存在的标签 ID，不得重复，最多 100 项。省略/null 按 `[]`；任一标签不存在返回 400，整次写入回滚。 |
 | `tagNames` | string[] / null | 否 | 只写字段，用标签名称代替或补充 `tagIds`，最多 100 项。每项去除首尾空白后不能为空，最多 100 个 Unicode 字符，禁止 NUL；重复名称只算一次。名称已存在则引用该标签，不存在则在同一事务中新建，结果与 `tagIds` 合并。 |
@@ -719,16 +714,16 @@ PUT 和 GET 单条响应：
 
 | HTTP 状态 | 场景 |
 | --- | --- |
-| 200 | 获取、修改作者姓名或标签名称、覆盖小说元信息、覆盖/新增单卷单章、已有小说批量续传、保存插图布局成功。 |
-| 201 | 创建平台、作者、标签、小说，关联插图，或批量上传中新建小说成功。 |
+| 200 | 获取、修改作者姓名或标签名称、覆盖小说元信息、覆盖/新增单卷单章、已有小说批量续传成功。 |
+| 201 | 创建平台、作者、标签、小说，或批量上传中新建小说成功。 |
 | 202 | 账户所属角色开启了审核：写入尚未生效，返回 `{"review_id":"...","status":"pending","message":"..."}`，审核通过后才写入内容库。 |
 | 204 | 删除成功，无响应体。 |
-| 400 | 缺字段、未知字段/查询键、类型/范围错误、空标题/正文、NUL、JSON 错误、单批重复序号/数量超限、标签数量或名称超限、非法关联、批量模式冲突、插图或布局参数不合法。 |
+| 400 | 缺字段、未知字段/查询键、类型/范围错误、空标题/正文、NUL、JSON 错误、单批重复序号/数量超限、标签数量或名称超限、非法关联、批量模式冲突。 |
 | 401 | 缺少/错误/重复的 Authorization。返回 `WWW-Authenticate: Bearer`。鉴权先于路由检查。 |
 | 403 | 账户所属角色的权限策略不允许该操作，返回 `{"error":"operation_forbidden"}`。 |
 | 404 | 路径不存在，或获取/删除/更新的目标不存在；续传小说不存在。 |
 | 405 | 路径不支持该请求方法，返回 `Allow` 头。 |
-| 409 | 数据唯一性冲突（含标签重名），试图删除仍包含章节的卷、仍被小说引用的标签，或保存插图布局时 `revision` 已过期。 |
+| 409 | 数据唯一性冲突（含标签重名），或试图删除仍包含章节的卷、仍被小说引用的标签。 |
 | 413 | JSON 请求体超过 8 MiB。 |
 | 415 | JSON 写入请求没有正确的 `Content-Type`，包括 multipart 上传。 |
 | 500 | 未预期服务或数据库错误，不返回数据库内部细节。 |
@@ -875,151 +870,4 @@ do {
 
 ## 12. 插图
 
-插图挂在小说下，每条记录只登记一张**已托管图片**的地址、校验值和尺寸；接口不接收图片二进制，也不会抓取或校验远程图片。
-插图布局是每部小说一份的排版数据，记录各插图在画布上的位置和大小。
-所有插图接口沿用个人 API Key 鉴权、JSON 错误格式和请求体限制。
-
-### 12.1 获取：GET /api/v5/illustrations?novelId=10
-
-| 查询键 | 类型 | 必填 | 说明 |
-| --- | --- | --- | --- |
-| `novelId` | integer | 是 | 所属小说 ID；小说不存在返回 404。 |
-| `limit` | integer | 否 | 通用分页。 |
-| `offset` | integer | 否 | 通用分页。 |
-
-示例：`GET /api/v5/illustrations?novelId=10&limit=100&offset=0`。
-返回下节插图对象组成的数组，按插图 ID 升序，即关联的先后顺序；没有插图或该页为空时返回 `[]`。
-不支持用 `id` 查询单张插图，带 `id` 返回 400。
-
-### 12.2 关联：POST /api/v5/illustrations?novelId=10
-
-查询参数只能包含必填的 `novelId`。接口不接收图片二进制：先把图片上传到自己的图床或存储，再提交它的地址和信息。
-
-```json
-{
-  "url": "https://img.example.com/book/10/illustration-1.jpg",
-  "sha256": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
-  "width": 1200,
-  "height": 1800
-}
-```
-
-| 请求键 | 类型 | 必填 | 约束 |
-| --- | --- | --- | --- |
-| `url` | string | 是 | `http` 或 `https` 地址，必须包含主机名，不能带用户名密码或 `#` 片段；最多 2048 字节，禁止 NUL、回车和换行。只保存字符串，不会请求该地址。 |
-| `sha256` | string | 是 | 图片内容的 SHA-256，64 位小写十六进制。 |
-| `width` | integer | 是 | 图片宽度（像素），`1` 至 `4096`。 |
-| `height` | integer | 是 | 图片高度（像素），`1` 至 `4096`；宽 × 高不超过 16,000,000。 |
-
-任一字段不合法返回 400；小说不存在返回 404。成功返回 `201`：
-
-```json
-{
-  "id": 40,
-  "novelId": 10,
-  "url": "https://img.example.com/book/10/illustration-1.jpg",
-  "sha256": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
-  "width": 1200,
-  "height": 1800,
-  "createdAt": "2026-10-29T04:00:00Z"
-}
-```
-
-`id` 是插图 ID，布局中的 `imageId` 使用此值；`createdAt` 为服务端时间，其余键与请求字段相同。
-同一部小说内 `sha256` 唯一：重复提交相同校验值不会新增记录，而是返回已有的那一条，此时 `url` 和尺寸以首次保存的为准。
-
-### 12.3 删除：DELETE /api/v5/illustrations?novelId=10&id=40
-
-只允许两个必填查询键 `novelId`、`id`，无请求体。成功返回 `204`；小说不存在，或这部小说下没有该插图，返回 404。
-如果布局中引用了这张插图，对应的块会一并移除，布局 `revision` 加 1。
-只删除插图记录，不会删除图床上的图片文件。
-
-### 12.4 获取布局：GET /api/v5/illustration-layout?novelId=10
-
-只接受必填查询键 `novelId`；小说不存在返回 404。成功返回 `200`：
-
-```json
-{
-  "novelId": 10,
-  "blocks": [
-    {
-      "imageId": 40,
-      "x": 0,
-      "y": 0,
-      "width": 480,
-      "height": 720
-    }
-  ],
-  "revision": 1
-}
-```
-
-- `blocks`：布局块数组，保持保存时的顺序；每块对应一张插图，键见下节。
-- `revision`：布局版本号，每次保存或因删除插图而调整后加 1。
-- 从未保存过布局时返回 `{"novelId":10,"blocks":[],"revision":0}`，不会返回 404 或 null。
-
-### 12.5 保存布局：PUT /api/v5/illustration-layout?novelId=10
-
-只接受必填查询键 `novelId`。请求体是完整布局，**整体替换**原有布局，不做局部合并：
-
-```json
-{
-  "novelId": 10,
-  "blocks": [
-    {
-      "imageId": 40,
-      "x": 0,
-      "y": 0,
-      "width": 480,
-      "height": 720
-    },
-    {
-      "imageId": 41,
-      "x": 520,
-      "y": 0,
-      "width": 480,
-      "height": 320
-    }
-  ],
-  "revision": 1
-}
-```
-
-| 请求键 | 类型 | 必填 | 约束 |
-| --- | --- | --- | --- |
-| `novelId` | integer | 是 | 必须与查询参数 `novelId` 相同。 |
-| `blocks` | array | 是 | 最多 500 项；清空布局时提交 `[]`，省略或 null 返回 400。 |
-| `blocks[].imageId` | integer | 是 | 这部小说下已存在的插图 ID，同一布局内不得重复。 |
-| `blocks[].x`、`blocks[].y` | number | 是 | 块左上角坐标，不小于 `0`。 |
-| `blocks[].width`、`blocks[].height` | number | 是 | 块的宽和高，均大于 `0`，且较长的一边不小于 `40`。 |
-| `revision` | integer | 是 | 上一次读取到的版本号；从未保存过时提交 `0`。 |
-
-坐标使用宽 `1000`、高 `5000` 的画布单位，不是像素：要求 `x + width ≤ 1000`、`y + height ≤ 5000`。数值可以是小数。
-
-成功返回 `200` 和保存后的布局，`revision` 为新版本号：
-
-```json
-{
-  "novelId": 10,
-  "blocks": [
-    {
-      "imageId": 40,
-      "x": 0,
-      "y": 0,
-      "width": 480,
-      "height": 720
-    },
-    {
-      "imageId": 41,
-      "x": 520,
-      "y": 0,
-      "width": 480,
-      "height": 320
-    }
-  ],
-  "revision": 2
-}
-```
-
-`revision` 与当前版本不一致时返回 `409`，说明布局已被其他请求修改；重新 GET 取得最新布局和版本号后再保存。
-引用了不存在或不属于这部小说的插图返回 400；小说不存在返回 404。
+插图上传、列表、删除与布局读写统一走 [创作者平台 `/api/v4`](/creatplat/api)，不属于本页的 ATHub `/api/v5` 接口。上传图片文件后由服务端登记或送审，无需再提交图片元数据。

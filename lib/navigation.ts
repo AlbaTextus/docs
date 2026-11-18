@@ -52,11 +52,6 @@ export const endpoints: Endpoint[] = [
   { slug: "chapters-upsert", title: "上传一个章节", group: "卷与章节", method: "PUT", path: "/api/v5/content", description: "按全书章节序号创建或覆盖标题、正文与卷关联。", sections: ["7.2"], requestSection: "7.2", responseSection: "7.2", status: "200" },
   { slug: "chapters-delete", title: "删除章节", group: "卷与章节", method: "DELETE", path: "/api/v5/content?novelId=10&order=1", description: "删除单个章节，不重新编号其他章节。", sections: ["7.3"], status: "204" },
   { slug: "upload", title: "批量上传小说", group: "数据导入", method: "POST", path: "/api/v5/upload", description: "一次创建小说并导入卷与章节，或为已有小说分批续传。", sections: ["8"], requestSection: "8.1", responseSection: "8.6", status: "201 / 200" },
-  { slug: "illustrations-list", title: "获取插图", group: "插图", method: "GET", path: "/api/v5/illustrations?novelId=10", description: "分页读取一部小说的插图，按关联顺序返回。", sections: ["12.1"], responseSection: "12.2", responseIsList: true, status: "200" },
-  { slug: "illustrations-create", title: "关联插图", group: "插图", method: "POST", path: "/api/v5/illustrations?novelId=10", description: "登记一张已托管图片的地址、校验值和尺寸，不接收图片文件。", sections: ["12.2"], requestSection: "12.2", responseSection: "12.2", status: "201" },
-  { slug: "illustrations-delete", title: "删除插图", group: "插图", method: "DELETE", path: "/api/v5/illustrations?novelId=10&id=40", description: "删除一张插图，并从插图布局中移除对应的块。", sections: ["12.3"], status: "204" },
-  { slug: "illustration-layout-get", title: "获取插图布局", group: "插图", method: "GET", path: "/api/v5/illustration-layout?novelId=10", description: "读取小说的插图布局和当前版本号。", sections: ["12.4"], responseSection: "12.4", status: "200" },
-  { slug: "illustration-layout-save", title: "保存插图布局", group: "插图", method: "PUT", path: "/api/v5/illustration-layout?novelId=10", description: "按版本号整体替换插图布局，版本过期时返回 409。", sections: ["12.5"], requestSection: "12.5", responseSection: "12.5", status: "200" },
 ]
 
 const atnexus = {

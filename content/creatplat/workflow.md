@@ -18,6 +18,6 @@
 
 编辑模式下，插图面板上方为展示画布，下方为当前作品的图片资源。将资源拖入画布后，拖动图片块内部调整位置，拖动四边或四角调整大小；靠近其他块的边缘时吸附并显示对齐线。移出画布保留图片资源，删除资源则同时清理画布引用。布局可在插图面板单独保存，也随顶部「保存修改」一起提交，取消修改还原未保存布局。浏览状态按已保存布局展示；未设置布局的作品沿用图片列表。
 
-插图资源上传使用 `POST /api/v4/account/athub/novels/{id}/illustrations`，删除使用 `DELETE /api/v4/account/athub/novels/{id}/illustrations/{illustrationId}`；资源操作单独提交，资料编辑的取消不会撤销已经提交的上传或删除。布局通过 `GET /api/v5/illustration-layout?novelId=…` 读取，浏览器以 `PUT /api/v4/account/athub/novels/{id}/illustration-layout` 保存，内部复用 `PUT /api/v5/illustration-layout?novelId=…` 的权限、审核和贡献历史。保存校验作品资源归属与布局版本；旧版本返回 409，避免覆盖他人的调整。待审核资源或布局继续展示正式数据。上线前应用模块迁移 `20261115010000_illustration_layout`。
+插图列表和上传分别使用 `GET`、`POST /api/v4/account/athub/novels/{id}/illustrations`，删除使用 `DELETE /api/v4/account/athub/novels/{id}/illustrations/{illustrationId}`。上传后服务端直接登记，需审核的在通过后生效。资源操作单独提交，取消资料编辑不会撤销已提交的上传或删除。布局在 `/api/v4/account/athub/novels/{id}/illustration-layout` 用 `GET` 读取、用 `PUT` 保存。保存校验作品资源归属与布局版本；旧版本返回 409，避免覆盖他人的调整。待审核期间继续展示正式数据。上线前应用模块迁移 `20261115010000_illustration_layout`。
 
-插图上传的图片格式、尺寸限制和归一化规则见 [ATHub 模块与数据库](/athub/module)。
+插图上传的图片格式、尺寸限制和归一化规则见 [ATHub 模块与数据库](/athub/module)。服务端程序可以用个人 Key 调用同一个上传接口，见[接口一览](/creatplat/api)。

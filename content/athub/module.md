@@ -36,8 +36,6 @@ ATN 主服务现在对外使用 `8005/api/v5/*`，由 `ATHUB_HTTP_ADDR` 配置�
 | `/api/v5/toc` | GET |
 | `/api/v5/content` | GET、PUT、DELETE |
 | `/api/v5/upload` | POST |
-| `/api/v5/illustrations` | GET、POST、DELETE |
-| `/api/v5/illustration-layout` | GET、PUT |
 
 外部 Key 请求使用 `Authorization: Bearer <API_KEY>`。登录用户在 OAuth `8001/api/v1/account/key`
 自动生成唯一的永久 Key，支持重置和停用；宿主注入的鉴权与记账中间件校验归属、当前 Key、停用状态和用户启用状态。
@@ -58,23 +56,24 @@ Key 只在生成或重置时显示明文，账户库只保存 SHA-256 哈希。�
 
 ### 插图
 
-`GET /api/v5/illustrations?novelId={id}&limit=100&offset=0` 返回按上传顺序排列的插图数组，
+插图和布局的公开接口统一由 [创作者平台 `/api/v4`](/creatplat/api) 提供。
+`GET /api/v4/account/athub/novels/{id}/illustrations?limit=100&offset=0` 返回按上传顺序排列的插图数组，
 支持现有分页规则。作品不存在返回 404，没有插图返回空数组。
 每项包含 `id`、`novelId`、`url`、`sha256`、`width`、`height`、`createdAt`。
 
 网站通过 creatplat 的 `POST /api/v4/account/athub/novels/{id}/illustrations` 上传，
 请求为 `multipart/form-data`，单个 `file` 字段。界面支持选择多张图片，逐张提交并单独报告失败。
-宿主验证登录会话、CSRF 和当前插图上传权限后，校验实际图片内容，
+同一接口也接受个人 API Key（`Authorization: Bearer <API_KEY>`），供服务端程序直接上传图片文件；
+带有 `Authorization` 请求头的请求按 Key 调用处理，不读取 Cookie。
+宿主验证登录会话与 CSRF（或个人 Key）以及当前插图上传权限后，校验实际图片内容，
 接受 JPG、PNG、WebP、GIF（GIF 使用首帧）；原图最大 5 MiB、单边 8192 像素、总像素 1600 万。
 图片去除元数据，按原比例缩小至最长边 4096 像素以内，并转换为 JPEG；
 透明区域使用白底。宿主在同一进程内直接保存到图床的
 `book/{novelId}/illustrations/` 目录，不经 HTTP 和上传 Key。
+Key 调用先完成 Key 核对、记账和权限判断，再读取图片。
 
-上传后宿主把图片 URL、归一化后图片的 SHA-256、宽高提交到
-内容关联能力（公开对应 `POST /api/v5/illustrations?novelId={id}`，JSON 字段为 `url`、`sha256`、`width`、`height`）。
-个人 API Key 也可调用此接口关联已有图片；URL 只接受有效 HTTP/HTTPS 地址，
-SHA-256 为 64 位小写十六进制，宽高必须为正且不超过归一化尺寸上限。
-该接口按 `upload` 权限记账并遵循现有审核策略：直接保存返回 201；
+上传后服务端在同一请求中把图片 URL、归一化后图片的 SHA-256 和宽高交给内部内容引擎，客户端无需再次调用接口。旧 `v5` 插图和布局入口不再公开。
+上传按 `upload` 权限记账并遵循现有审核策略：直接保存返回 201；
 需要审核时返回 202 和 `review_id`，审核通过后才公开显示。插图变更进入作品历史和贡献者记录。
 同一作品内相同校验值只保存一条记录，重复提交不会增加图片或历史记录。
 
