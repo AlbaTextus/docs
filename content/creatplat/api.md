@@ -63,7 +63,11 @@
 | `decision` | 必填，`approve` 通过或 `reject` 驳回。 |
 | `note` | 审核说明，去除首尾空白后最多 1000 个字符；驳回时必填。 |
 
-字段不合法返回 `400 invalid_decision`。成功返回 `200` 和处理后的审核记录。通过后才把原提交写入正式内容库；审核者不能处理自己的提交，也不能借审核执行自己无权进行的操作。同一条审核被重复或并发处理时，内容不会重复写入。
+字段不合法返回 `400 invalid_decision`。成功返回 `200` 和处理后的审核记录。通过后才把这次提交的改动写入正式内容库：只写入提交实际改动的内容，提交之后的其他修改不会被覆盖，规则见[投稿、编辑与审核](/creatplat/workflow)。审核者不能处理自己的提交，也不能借审核执行自己无权进行的操作。同一条审核被重复或并发处理时，内容不会重复写入。
+
+通过后的记录带有 `result_status` 和 `result`，是内容接口对这次写入给出的 HTTP 状态码和回复；列表只返回 `result_status`，`result` 在单条详情里。写入成功时 `status` 为 `approved`。内容接口拒绝写入时 `status` 为 `failed`（页面上显示为「生效失败」），正式内容没有变化，`result` 形如 `{"error":"…"}`，`result_status` 的含义与内容接口相同，见[错误与状态码](/athub/errors)，例如 `404` 表示提交涉及的内容已不存在，`422` 表示提交引用的封面或插图已不在图床。
+
+`result_status` 另有一个只出现在审核结果里的值 `412`：这次提交改动的内容在提交之后已被修改，通过时没有写入任何内容，`result` 为 `{"error":"content changed after this change was submitted; submit it again from the current content"}`。提交者需要按当前内容重新提交。直接写入的请求不会收到 `412`。
 
 ## 封面上传
 

@@ -8,7 +8,7 @@
 
 | 数据 | 存放位置 |
 | --- | --- |
-| 待审投稿、修订请求、审核决定及执行结果 | 创作者库 `athub_reviews` |
+| 待审投稿、修订请求、提交时记下的改动、审核决定及执行结果 | 创作者库 `athub_reviews` |
 | 贡献历史、修订差异、历史准备/确认状态 | 创作者库 `novel_revisions` |
 | 旧数据导入来源、记录数、逐字段摘要及完成时间 | 创作者库 `creator_migration_state` |
 | 用户、密码、session、外部 Key | OAuth 库 |
@@ -29,6 +29,14 @@ Prisma 命令和迁移工具都从根目录运行，读取根 `.env`。账号、
 
 Docker Compose 新增 `creatplat-postgres` 与独立 volume。配置 `CREATPLAT_POSTGRES_PASSWORD`、`CREATPLAT_COMPOSE_DATABASE_URL`；后者必须使用容器网络内的 `creatplat-postgres` 主机及对应账号/数据库。宿主机执行 Prisma 时，`CREATPLAT_DATABASE_URL` 则使用实际宿主访问地址，默认映射端口为 `5434`。数据库容器健康只表示 PostgreSQL 可连接，不表示迁移已完成。
 
+## 后续迁移
+
+建库之后的结构变更同样通过 `prisma/creatplat/` 的迁移链发布，应用不会自行修改表结构。升级到带有新迁移的版本时，在启动新版本之前运行 `npm run db:creatplat:deploy`；表结构缺少新版本需要的列时启动检查不通过，服务拒绝启动。升级的完整顺序见[数据库与迁移](/deploy/database)。
+
+| 迁移 | 说明 |
+| --- | --- |
+| `20261119000000_review_baseline` | 为 `athub_reviews` 增加可空的 JSONB 列 `baseline`，保存一项需审核的提交在预演时实际改动了哪些内容及其原值。通过审核时据此只写入提交改动的内容，并在这些内容已被改过时拒绝写入，见[投稿、编辑与审核](/creatplat/workflow)。这一列只在服务端内部使用，不出现在审核接口返回的记录里。迁移只增加这一列，不回填已有记录：升级前已在排队的提交该列为空，通过时仍整份写入。 |
+
 ## 旧数据迁移与核对
 
 迁移工具读取 `DATABASE_URL` 中原有的 `athub_reviews` 和 `novel_revisions`，写入 `CREATPLAT_DATABASE_URL`：
@@ -36,7 +44,7 @@ Docker Compose 新增 `creatplat-postgres` 与独立 volume。配置 `CREATPLAT_
 - 保留主键、用户/审核者标识、JSON 内容、原审核状态、原历史状态和时间；不补造旧贡献者或正文差异。
 - 锁定源审核/历史表以阻止并发变更；锁定目标表，目标非空且没有有效导入标记时拒绝覆盖。
 - 流式读取、参数化写入，JSON 以原始文本转存，避免大整数经浮点转换丢失精度。
-- 对源与目标按稳定 ID 排序，计算整行 JSON 的 SHA-256，并比对实际记录数；全部一致后，将数据和导入标记在一个目标事务中提交。
+- 对源与目标按稳定 ID 排序，计算整行 JSON 的 SHA-256，并比对实际记录数；全部一致后，将数据和导入标记在一个目标事务中提交。创作者库后来增加的 `baseline` 列旧表没有：导入不写入这一列，摘要也不计入它，此前的导入标记不受影响。
 - 中途失败回滚目标事务，源数据不变；重复运行相同已导入来源时不重复插入。来源变化时拒绝自动覆盖。
 - 导入不执行内容变更，不重复批准历史审核，也不改写 ATHub 的执行回执。
 
