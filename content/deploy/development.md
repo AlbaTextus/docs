@@ -6,10 +6,10 @@
 cmd/                  服务入口、开发 seed、数据迁移与 Status 接入工具
 internal/             配置、统一 HTTP 装配、账户存储及过渡适配
 modules/oauth/        账户、session、OAuth、外部 Key、Passkey 与第三方登录
-modules/image/        图床上传、文件管理、本地/S3 存储及图床库迁移
-modules/creatplat/    投稿、审核、历史、修订及独立创作者库迁移
-modules/athub/        正式内容、准入适配、测试及内容库迁移
-prisma/               账户数据库 schema 与完整历史迁移
+modules/image/        图床上传、文件管理、本地/S3 存储及旧图床数据导入
+modules/creatplat/    投稿、审核、历史、修订及旧审核与历史数据导入
+modules/athub/        正式内容、准入适配及内容库的 Prisma 工具配置
+prisma/               四套数据库的 schema 与完整历史迁移：oauth/、athub/、creatplat/、image/
 web/app/              Next.js 页面与全局样式
 web/components/       按业务域分组的组件，见「前端目录与命名规范」
 web/lib/              前端 API 与按业务域分组的逻辑
@@ -29,11 +29,11 @@ release/              本地构建与发布产物
 | `npm run db:image:import` | 停写后导入原 SQLite 图床数据 |
 | `pnpm web:dev` | 前端开发服务 |
 | `pnpm web:typecheck` | TypeScript 类型检查 |
-| `pnpm db:validate` | 校验 Prisma schema |
-| `pnpm db:format` | 格式化 Prisma schema |
-| `pnpm db:migrate` | 在开发数据库创建、应用迁移 |
-| `pnpm db:deploy` | 应用已提交的迁移 |
-| `pnpm db:studio` | 打开数据库管理界面 |
+| `pnpm db:validate` | 校验账户库的 Prisma schema |
+| `pnpm db:format` | 格式化账户库的 Prisma schema |
+| `pnpm db:migrate` | 在开发用账户库创建、应用迁移 |
+| `pnpm db:deploy` | 应用账户库已提交的迁移 |
+| `pnpm db:studio` | 打开账户库的管理界面 |
 
 Prisma schema 与迁移是数据库结构的来源；Go 服务没有 Prisma Client，也不会在启动时自动建表。首次检查前端或更换构建目录时，先完成一次前端构建，生成 Next.js 路由类型。
 

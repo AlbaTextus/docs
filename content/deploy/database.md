@@ -6,11 +6,12 @@
 
 | 数据库 | 环境变量 | 迁移目录 | 部署命令 |
 | --- | --- | --- | --- |
-| 账户库 | `DATABASE_URL` | `prisma/` | `pnpm db:deploy` |
-| 内容库 | `ATHUB_DATABASE_URL` | `modules/athub/prisma/` | `npm run db:athub:deploy` |
-| 创作者库 | `CREATPLAT_DATABASE_URL` | `modules/creatplat/prisma/` | `npm run db:creatplat:deploy` |
-| 图床库 | `IMAGE_DATABASE_URL` | `modules/image/prisma/` | `npm run db:image:deploy` |
+| 账户库 | `DATABASE_URL` | `prisma/oauth/` | `pnpm db:deploy` |
+| 内容库 | `ATHUB_DATABASE_URL` | `prisma/athub/` | `npm run db:athub:deploy` |
+| 创作者库 | `CREATPLAT_DATABASE_URL` | `prisma/creatplat/` | `npm run db:creatplat:deploy` |
+| 图床库 | `IMAGE_DATABASE_URL` | `prisma/image/` | `npm run db:image:deploy` |
 
+- 四套数据库的表定义集中在仓库根目录的 `prisma/` 下，每个库一个文件夹，各自包含 `schema.prisma` 和 `migrations/`，迁移链相互独立。
 - Prisma schema 与迁移是数据库结构的来源。Go 服务没有 Prisma Client，启动时只检查连接和结构，不会自动建库、建表或迁移。
 - 统一服务启动时检查全部四套数据库，任何一套初始化失败都不会开始监听。
 - 所有命令在仓库根目录执行，读取根目录的 `.env`。连接账号、密码和地址只放在环境配置里，不提交到仓库。

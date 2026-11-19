@@ -21,7 +21,7 @@
 
 历史与贡献者查询入口为 `/api/v4/history`、`/api/v4/contributors`。为保留原权限与审计语义，宿主适配器暂将这些请求转换为旧操作标签，再执行原准入事务；外部不再使用该内部标签作为新路径。
 
-审核表 `athub_reviews` 和历史表 `novel_revisions` 由独立创作者库 `CREATPLAT_DATABASE_URL` 管理，迁移链位于 `modules/creatplat/prisma/`。
+审核表 `athub_reviews` 和历史表 `novel_revisions` 由独立创作者库 `CREATPLAT_DATABASE_URL` 管理，迁移链位于 `prisma/creatplat/`。
 旧账户库中对应两张表保留为升级导入来源；部署前按 [创作者数据库说明](/creatplat/database) 完成建库、迁移和数据核对。ATHub 小说库不新增历史表或账号表。
 修改者由宿主根据已认证的账号或 Key 所属账号确定，客户端不能指定贡献者。
 小说元数据、卷、章节、批量上传以及已有作者/标签名称的修改都记录变更；
@@ -44,4 +44,5 @@
 - `history.go`：贡献记录准备/确认与历史、贡献者查询。
 - `repository/history.go`：历史 SQL 与类型，运行时使用创作者独立连接池。
 - `storage/`：独立库初始化、审核存储、迁移核对及旧数据导入。
-- `prisma/`：创作者数据库的独立 schema 和迁移链。
+
+创作者数据库的独立 schema 和迁移链不在模块目录内，位于仓库根目录的 `prisma/creatplat/`。

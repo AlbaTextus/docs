@@ -97,13 +97,13 @@ Key 调用先完成 Key 核对、记账和权限判断，再读取图片。
 ## 数据库与迁移
 
 `ATHUB_DATABASE_URL` 专用于内容库，与宿主 `DATABASE_URL` 分开配置。
-本目录 `prisma/` 保留完整历史迁移，宿主账户库的迁移仍由根目录 `prisma/` 管理。
+内容库的 schema 与完整历史迁移位于仓库根目录的 `prisma/athub/`，宿主账户库的迁移位于 `prisma/oauth/`，两条迁移链相互独立。
 可连接原 ATHub 数据库，无需搬运内容数据；启动只检查连接与 schema，不自动迁移。
 内容库保存平台、作者、小说、标签库、小说标签关系、卷和章节。`athub_api_keys`、`athub_api_calls` 两张表均由
 宿主账户库维护；本模块只提供注入接口，不连接账户库、不定义用户或调用统计表。
 `athub_api_calls` 中不带个人 Key 的记录（未登录请求和网站会话请求）只作审计用途，超过
 `ATHUB_CALL_LOG_RETENTION`（默认 30 天）后由宿主的定时清理任务删除；带 Key 的记录用于用量统计，不清理。
-对应的部分索引由根目录迁移 `20261118000000_athub_call_log_purge_index` 创建，升级前执行 `npm run db:deploy`。
+对应的部分索引由账户库迁移 `20261118000000_athub_call_log_purge_index` 创建，升级前执行 `npm run db:deploy`。
 
 `20261115000000_novel_illustrations` 增量创建 `Illustration` 表，通过外键关联作品，
 并按作品和图片校验值去重。已有作品默认没有插图；删除作品时关联记录一并删除。
@@ -113,7 +113,7 @@ Key 调用先完成 Key 核对、记账和权限判断，再读取图片。
 
 ```powershell
 npm run db:athub:install
-# Prisma 7 在此目录执行，从统一仓库根目录读取 .env。
+# Prisma 7 的工具和 prisma.config.ts 位于 modules/athub/，从统一仓库根目录读取 .env。
 npm run db:athub:validate
 npm run db:athub:deploy
 ```
@@ -147,7 +147,7 @@ schema，不在业务表中写入测试数据。未配置时这些测试跳过�
 
 ## 维护方式与凭据
 
-ATHub 保留自己的存储实现、测试和 Prisma 迁移；Go 依赖统一由根 `go.mod` 管理，准入层位于 `modules/athub/access/`。
+ATHub 保留自己的存储实现、测试和 Prisma 迁移（迁移文件位于根目录 `prisma/athub/`）；Go 依赖统一由根 `go.mod` 管理，准入层位于 `modules/athub/access/`。
 维护内容功能时修改该目录，再重新构建统一程序。普通 Git 克隆即可取得全部源码，
 不需要相邻 ATHub 目录或初始化子模块。原 ATHub 工作目录保留。
 
