@@ -1,0 +1,126 @@
+.credits-marquee-section {
+  margin: 40px 0 8px;
+  padding-top: 24px;
+  border-top: 1px solid var(--docs-line);
+}
+
+.credits-marquee-viewport {
+  position: relative;
+  overflow: hidden;
+  padding-block: 14px;
+  mask-image: linear-gradient(to right, transparent, #000 9%, #000 91%, transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 9%, #000 91%, transparent);
+}
+
+.credits-marquee-rail {
+  display: flex;
+  width: max-content;
+  will-change: transform;
+  animation: credits-marquee-scroll 34s linear infinite;
+}
+
+.credits-marquee-viewport:hover .credits-marquee-rail,
+.credits-marquee-viewport:focus-within .credits-marquee-rail {
+  animation-play-state: paused;
+}
+
+.credits-marquee-track {
+  display: flex;
+  align-items: center;
+  gap: 52px;
+  padding-right: 52px;
+  margin: 0;
+  padding-left: 0;
+  list-style: none;
+}
+
+.credits-marquee-item {
+  flex-shrink: 0;
+}
+
+.credits-brand-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding-block: 4px;
+  color: var(--foreground);
+  opacity: 0.88;
+  transition:
+    opacity 180ms ease,
+    transform 180ms ease;
+}
+
+.credits-brand-logo:hover {
+  opacity: 1;
+  transform: translateY(-1px);
+}
+
+.credits-brand-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.credits-brand-mark > svg {
+  width: 24px;
+  height: 24px;
+  display: block;
+}
+
+.credits-brand-mark > svg.is-wide {
+  width: 38px;
+  height: 20px;
+}
+
+.credits-brand-wordmark {
+  font-size: 16px;
+  font-weight: 650;
+  letter-spacing: -0.025em;
+  line-height: 1;
+  white-space: nowrap;
+  color: var(--foreground);
+}
+
+.credits-brand-wordmark.is-cloudflare {
+  font-weight: 750;
+  letter-spacing: -0.03em;
+}
+
+.credits-brand-wordmark.is-maple {
+  font-family: var(--font-mono);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+@keyframes credits-marquee-scroll {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .credits-marquee-viewport {
+    mask-image: none;
+    -webkit-mask-image: none;
+  }
+
+  .credits-marquee-rail {
+    width: 100%;
+    animation: none;
+  }
+
+  .credits-marquee-track[aria-hidden="true"] {
+    display: none;
+  }
+
+  .credits-marquee-track {
+    flex-wrap: wrap;
+    gap: 24px 36px;
+    padding-right: 0;
+  }
+}

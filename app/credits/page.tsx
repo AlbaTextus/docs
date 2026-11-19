@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import { ChevronRight } from "lucide-react"
+import { CreditsBrandMarquee } from "@/components/credits-brand-marquee"
 
 const description = "文档站用到的开源字体，以及 Cloudflare 提供的服务与组件。"
 
@@ -18,5 +19,6 @@ export default function CreditsPage() {
       <h2>Cloudflare</h2>
       <p>文档站部署在 <a href="https://workers.cloudflare.com/" {...external}>Cloudflare Workers</a> 上，侧栏使用 Cloudflare 开源的 <a href="https://github.com/cloudflare/kumo" {...external}>Kumo</a> 组件库（MIT 许可）。</p>
     </article>
+    <CreditsBrandMarquee />
   </div>
 }

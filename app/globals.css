@@ -5,6 +5,7 @@
 @import "../styles/docs-hero.css";
 @import "../styles/oauth-flow.css";
 @import "../styles/athub-reference.css";
+@import "../styles/credits-marquee.css";
 @source "../node_modules/@cloudflare/kumo/dist";
 
 :root {
