@@ -46,7 +46,7 @@ npm run dev
 
 - Next.js 16、React 19、TypeScript strict、Tailwind CSS v4。
 - 直接使用 `@cloudflare/kumo/components/sidebar` 的组合式侧栏：折叠分组、图标模式、悬停预览、移动端抽屉。
-- 首页导航栏直接复制 ATUI 的 `SiteHeader` 源码，保留图标导航、提示、品牌字标与滚动收起动画；文档内页不显示顶部导航栏，主题与返回首页入口位于侧栏底部。
+- 首页导航栏直接复制 ATUI 的 `SiteHeader` 源码，保留图标导航、提示、品牌字标与滚动收起动画；文档内页不显示顶部导航栏，主题与返回首页入口位于侧栏底部，其上方固定一个「致谢」入口，所有文档页都显示，跳转到独立页面 `/credits`（`app/credits/page.tsx`，不来自 `content/`）。
 - 页脚、主题、按钮、对话框、代码高亮均复制到 `components/ui/`，滚动逻辑在 `components/hooks/`，样式和字体分别在 `styles/`、`fonts/`；均由 Docs 自行维护，不依赖 `@albatextus/ui` 或跨项目源码。
 - 首页移除 ATHub 专属宣传内容，展示本地复制的 ATUI 架构图，节点图标改为文档主题，方格与图标使用蓝粉配色；站点页脚仅在首页显示。
 - 文档侧栏顶部的项目下拉菜单列出全部模块，点击后进入该模块的第一篇文档，侧栏内容随之切换；当前模块由地址中的第一段路径决定。

@@ -9,7 +9,7 @@ import { SiteFooter } from "@/components/ui/site-footer"
 import { SiteHeader, type NavigationItem } from "@/components/ui/site-header"
 import { IconButton } from "@/components/ui/icon-button"
 import { ThemeToggle } from "@/components/ui/theme-toggle"
-import { Github, House, PanelLeft, Search } from "lucide-react"
+import { Github, Heart, House, PanelLeft, Search } from "lucide-react"
 import { docHref, groups, serviceFromPath, type Page } from "@/lib/navigation"
 import { SearchDialog } from "./search-dialog"
 import { DocumentSwitcher } from "./document-switcher"
@@ -59,6 +59,9 @@ function Navigation({ onSearch }: { onSearch: () => void }) {
         <Sidebar.Menu>{section.pages.map(pageButton)}</Sidebar.Menu>
       </Sidebar.Group>)}
     </Sidebar.Content>
+    <div className="docs-sidebar-credits">
+      <Sidebar.Menu><Sidebar.MenuButton href="/credits" icon={Heart} active={pathname === "/credits"} aria-current={pathname === "/credits" ? "page" : undefined} onClick={() => setOpenMobile(false)} tooltip="致谢">致谢</Sidebar.MenuButton></Sidebar.Menu>
+    </div>
     <Sidebar.Footer className="docs-sidebar-footer"><button onClick={toggleSidebar} aria-label={state === "expanded" ? "收起侧栏" : "展开侧栏"} aria-expanded={state === "expanded"}><PanelLeft size={18} /><span>收起侧栏</span></button><Link href="/" aria-label="返回文档首页"><House size={18} /></Link><ThemeToggle /></Sidebar.Footer>
   </Sidebar>
 }
