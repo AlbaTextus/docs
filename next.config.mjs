@@ -5,6 +5,9 @@ export default phase => ({
   distDir: phase === "phase-development-server" ? "temp/next" : "release/next",
   devIndicators: false,
   poweredByHeader: false,
+  experimental: {
+    agentUpgrade: "security",
+  },
   async headers() {
     return [{ source: "/:path*", headers: [
       { key: "X-Content-Type-Options", value: "nosniff" },
