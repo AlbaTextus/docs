@@ -3,11 +3,11 @@
 ## 目录与命令
 
 ```text
-cmd/                  服务入口、开发 seed、数据迁移与 Status 接入工具
+cmd/                  服务入口、开发 seed、创作者库建库与 Status 接入工具
 internal/             配置、统一 HTTP 装配、账户存储及过渡适配
 modules/oauth/        账户、session、OAuth、外部 Key、Passkey 与第三方登录
-modules/image/        图床上传、文件管理、本地/S3 存储及旧图床数据导入
-modules/creatplat/    投稿、审核、历史、修订及旧审核与历史数据导入
+modules/image/        图床上传、文件管理与本地/S3 存储
+modules/creatplat/    投稿、审核、历史与修订
 modules/athub/        正式内容、准入适配及内容库的 Prisma 工具配置
 prisma/               四套数据库的 schema 与完整历史迁移：oauth/、athub/、creatplat/、image/
 web/app/              Next.js 页面与全局样式
@@ -20,13 +20,11 @@ release/              本地构建与发布产物
 
 | 命令 | 用途 |
 | --- | --- |
-| `npm run server:dev` | 一个进程运行 OAuth、图床、创作者平台和 ATHub，只监听聚合端口 `8010` |
+| `npm run server:dev` | 一个进程运行 OAuth、图床、邮件、创作者平台和 ATHub，只监听聚合端口 `8010` |
 | `npm run test:go` | 运行正式 Go 代码及所有业务模块测试，排除 temp 中的过程脚本 |
 | `npm run db:athub:deploy` | 应用内容库迁移 |
 | `npm run db:creatplat:deploy` | 应用创作者独立库迁移 |
-| `npm run db:creatplat:import` | 停写后导入并核对旧审核和历史数据 |
 | `npm run db:image:deploy` | 应用图床独立库迁移 |
-| `npm run db:image:import` | 停写后导入原 SQLite 图床数据 |
 | `pnpm web:dev` | 前端开发服务 |
 | `pnpm web:typecheck` | TypeScript 类型检查 |
 | `pnpm db:validate` | 校验账户库的 Prisma schema |
@@ -51,7 +49,7 @@ components/presentation/  不依赖路由与业务反馈的纯展示实现
 components/shared/        跨业务域复用的组件
 components/layout/        站点页头、页脚、主题与全局 Provider
 components/{auth,account,admin,home,maintenance,novel,creatplat}/
-lib/                      根目录只放跨域基础：api、feedback、content-cache、utils、wiki
+lib/                      根目录只放跨域基础：api、feedback、content-cache、utils
 lib/{auth,account,admin,athub,novel,creatplat,maintenance,home}/
 styles/index.css          全局样式入口，由 app/globals.css 引入
 styles/base/              主题 token、字体、滚动条及通用组件样式

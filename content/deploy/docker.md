@@ -21,7 +21,7 @@ Compose 项目与后端服务均名为 `atnexus`。数据库名称、账号及�
 | `postgres` | `postgres:16-alpine` | `5432` | 账户库 |
 | `athub-postgres` | `postgres:16-alpine` | `5433` | 内容库 |
 | `creatplat-postgres` | `postgres:16-alpine` | `5434`，可用 `CREATPLAT_POSTGRES_PORT` 修改 | 创作者库 |
-| `atnexus` | 根目录 `Dockerfile` | `8010` | Go 后端，四个模块共用唯一的聚合端口 |
+| `atnexus` | 根目录 `Dockerfile` | `8010` | Go 后端，五个模块共用唯一的聚合端口 |
 | `web` | `web/Dockerfile` | `3288` | Next.js 前端 |
 
 后端镜像以静态方式编译，运行在 distroless 的非 root 用户下。Compose 里没有图床数据库容器：图床库使用外部 PostgreSQL，图片目录以绑定挂载的方式挂到容器的 `/data/images`。上传与分块的临时文件保存在具名卷 `image-temp`（容器内 `/var/lib/atnexus/image-temp`），重建容器后未完成的分块上传可以继续。

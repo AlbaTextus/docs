@@ -1,6 +1,6 @@
 # 数据库与迁移
 
-四个模块各用一套 PostgreSQL 数据库。它们可以位于同一个 PostgreSQL 实例，但必须是不同的数据库，不能用同一个库的不同 schema 代替。
+OAuth、ATHub、创作者平台和图床四个模块各用一套 PostgreSQL 数据库；邮件模块使用账户库，不单独建库。它们可以位于同一个 PostgreSQL 实例，但必须是不同的数据库，不能用同一个库的不同 schema 代替。
 
 ## 四套数据库
 
@@ -44,9 +44,9 @@ npm run db:image:deploy
 1. 备份四套数据库，以及 `CLIENT_SECRET_ENCRYPTION_KEY`。加密密钥必须与账户库一起保存，升级时沿用原值。
 2. 停止旧版本后端，包括仍在写入的旧程序。
 3. 对有新迁移的数据库执行上面的部署命令。迁移是独立的发布步骤，不随程序启动执行。
-4. 账户库里还保留旧审核和历史数据时，执行 `npm run db:creatplat:import` 导入并核对，步骤见[创作者平台数据库](/creatplat/database)。
-5. 从原 SQLite 图床升级时，停写并备份后执行 `npm run db:image:import -- -source <SQLite 绝对路径>`，步骤见[图床迁移与升级](/image/migration)。
-6. 启动新版本，确认四个模块的健康检查返回 200，地址见[健康检查](/deploy/production)。已有实例不需要重复执行 seed。
+4. 启动新版本，确认各模块的健康检查返回 200，地址见[健康检查](/deploy/production)。已有实例不需要重复执行 seed。
+
+从账户库导入旧审核与历史、从 SQLite 图床导入这两个一次性工具已经退役。还没有完成这两项导入的安装，先用仍带导入工具的旧版本完成导入与核对，再执行下表中 `20261120000000` 的三个删表迁移，见[创作者平台数据库](/creatplat/database)和[图床迁移与升级](/image/migration)。
 
 ## 需要留意的迁移
 
@@ -57,6 +57,8 @@ npm run db:image:deploy
 | 账户库 | `20261101000000_remove_communications` | 永久删除 `mail_deliveries` 和 `communications` 表及其中的消息、发送记录 |
 | 账户库 | `20261110000000_athub_user_keys`、`20261110010000_athub_single_key`、`20261110020000_athub_admin_disable` | 个人 Key、单 Key 模式与管理员禁用，见 [ATHub 密钥与权限](/oauth/athub-key) |
 | 账户库 | `20261117000000_athub_key_call_counter` | 个人 Key 的已放行调用计数列，迁移时按调用记录回填一次；新版本启动时要求该列存在。须在旧后端停止后执行，旧程序在迁移之后放行的调用不会计入额度 |
+| 账户库 | `20261120000000_drop_retired_tables` | 永久删除已没有程序读写的表及其数据：旧审核 `athub_reviews` 与旧历史 `novel_revisions`（数据已在创作者库）、图床 Key 导入标记 `image_key_imports`、旧钱包与支付表 `wallets`、`wallet_entries`、`wallet_settlements`、`payment_orders`，以及协议正文表 `legal_documents`。执行前确认创作者库的导入已经完成、钱包与支付数据不再需要或已另行备份。执行之后旧版本后端无法启动 |
+| 账户库 | `20261120010000_drop_athub_call_port` | 永久删除调用记录表 `athub_api_calls` 的 `port` 列，已记录的端口不可恢复，调用记录的其余内容不受影响；只修改表定义，不重写表。新版本启动时要求该列已删除：仍有该列的账户库无法写入调用记录。执行之后旧版本后端无法启动 |
 | 内容库 | `20261103000000_remove_user_api` | 删除旧 `ApiUser`、`ApiKey`、`ApiUsage` 表及数据，保留平台、作者、小说、卷与章节 |
 | 内容库 | `20261110030000_add_tags`、`20261110040000_add_author_name` | 标签库与作者姓名 |
 | 内容库 | `20261115000000_novel_illustrations`、`20261115010000_illustration_layout` | 插图与插图布局 |
@@ -65,10 +67,12 @@ npm run db:image:deploy
 | 内容库 | `20261117030000_chapter_content_digest` | 章节正文的摘要与长度生成列 `contentHash`、`contentLength`，记录修订历史时不必读取正文；新版本启动时要求这两列存在。迁移会重写一次章节表并回填已有章节，章节多时耗时较长 |
 | 内容库 | `20261118000000_revision_receipts` | 修订批次回执表 `RevisionReceipt`，用于核对内容已提交但历史未确认的修订；新版本启动时要求该表存在，见[创作者平台模块概览](/creatplat/overview) |
 | 创作者库 | `20261116010000_creator_database` | 建立独立创作者库的审核与历史表 |
+| 创作者库 | `20261120000000_drop_migration_state` | 永久删除导入标记表 `creator_migration_state`。执行之后旧版本后端无法启动 |
 | 图床库 | `20261116020000_image_database` | 建立独立图床库；账户库同时需要 `20261116020000_image_api_keys` |
 | 图床库 | `20261117020000_image_list_order` | 重建文件列表的时间索引，使其与列表的排序方式一致 |
+| 图床库 | `20261120000000_drop_import_archive` | 永久删除 SQLite 导入留下的加密归档表 `image_legacy_rows` 与导入标记表 `image_imports`，归档的原设置、旧 session 和旧索引任务随之删除；文件记录、当前设置和分块会话不受影响。执行之后旧版本后端无法启动 |
 
-积分与支付已迁出到独立的 Credit 服务，旧钱包表保留为只读迁移来源。在旧账户库上运行 `prisma migrate dev` 可能提出删除这些已移出的表，完成迁移及核对前不要接受，说明见 [OAuth 模块概览](/oauth/overview)。
+积分与支付已迁出到独立的 Credit 服务，旧钱包与支付表不再保留，由上表的 `20261120000000_drop_retired_tables` 删除，说明见 [OAuth 模块概览](/oauth/overview)。
 
 ## 测试用数据库
 

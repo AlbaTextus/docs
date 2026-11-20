@@ -1,16 +1,16 @@
 # 模块概览
 
-本模块负责账户认证、OAuth 授权、第三方登录、Passkey、邮箱、人机验证，以及外部 API Key 的管理与凭据校验。
+本模块负责账户认证、OAuth 授权、第三方登录、Passkey、人机验证，以及外部 API Key 的管理与凭据校验。邮箱验证码与发信已拆到[邮件模块](/mail/overview)（`/api/v3`）。
 
 统一服务在聚合入口（默认 `8010`，由 `GATEWAY_HTTP_ADDR` 配置）提供 `/api/v1/*`。OAuth 协议端点 `/oauth/*` 和发现端点 `/.well-known/*` 保持原路径。
 
-各项能力分别见[登录与账户](/oauth/login)、[邮箱认证](/oauth/email)、[应用接入](/oauth/integration)、[ATHub 密钥与权限](/oauth/athub-key)、[站点开关与维护](/oauth/site)和[接口一览](/oauth/api)。
+各项能力分别见[登录与账户](/oauth/login)、[邮件模块](/mail/overview)、[应用接入](/oauth/integration)、[ATHub 密钥与权限](/oauth/athub-key)、[站点开关与维护](/oauth/site)和[接口一览](/oauth/api)。
 
 ## 路由与凭据
 
 OAuth 使用 `/api/v1/*`，协议端点 `/oauth/*` 和发现端点保持原路径。
-ATHub 公开入口改为 `/api/v5/*`，创作者平台为 `/api/v4/*`。
-底层内容引擎、权限配置与历史审计的 v2/v3 操作标签暂保留，通过边界适配转换。
+ATHub 公开入口改为 `/api/v5/*`，创作者平台为 `/api/v4/*`，邮件模块为 `/api/v3/*`。
+底层内容引擎、权限配置与历史审计的 v2/v3 操作标签暂保留，通过边界适配转换；这些标签只在内部使用，与邮件模块公开的 `/api/v3` 无关。
 这不表示 image 使用了旧内容接口，也不创建新的 library 模块。
 
 `GET /api/v1/session` 返回 session 到期时间与缓存隔离标识，不返回凭证。浏览器站内请求使用 HttpOnly session Cookie；Key 用于外部调用，两者独立。
@@ -35,13 +35,14 @@ ATHub 公开入口改为 `/api/v5/*`，创作者平台为 `/api/v4/*`。
 本仓库曾使用 `AlbaTextus/connect`、`AlbaTextus/oauth` 名称，现统一命名为
 `AlbaTextus/atnexus`，负责账户、认证、OAuth 授权与 ATHub 内容存储。
 积分、支付、管理调整与 24 小时结算已迁移至独立仓库 [AlbaTextus/credit](https://github.com/AlbaTextus/credit)，使用独立数据库。
-账户中心的积分入口和旧支付页面跳转到 `NEXT_PUBLIC_CREDIT_URL`（本地默认 `http://localhost:3300`）。
+账户中心不再提供积分入口和旧支付页面的跳转。
 钱包及支付 API 不再由本服务提供；调用方应切换到 Credit。
 
 Credit 在应用管理中注册为机密 OAuth 客户端：回调地址 `http://localhost:3300/api/v1/auth/callback`，
 授权类型 `authorization_code`，scope `profile`，生产环境将地址换为 Credit 的 HTTPS 域名。
 `profile` 用户信息包含稳定 UUID、数字用户编号、昵称、头像及角色；Credit 不接收账户密码或登录 Cookie。
 
-历史迁移文件保持原样，升级使用 `pnpm db:deploy`。旧钱包表保留为只读迁移来源，
-不会自动删除、清空或在本服务继续结算。迁移步骤见 Credit 的 `MIGRATION.md`。
-旧数据库的 `prisma migrate dev` 可能提出删除已移出的表，完成迁移及核对前不要接受这种删除。
+历史迁移文件保持原样，升级使用 `pnpm db:deploy`。旧钱包与支付表（`wallets`、`wallet_entries`、
+`wallet_settlements`、`payment_orders`）曾保留为只读迁移来源，现由迁移
+`20261120000000_drop_retired_tables` 删除，其中的数据不可恢复；仍需要这些数据时，
+在执行迁移前备份或完成迁出，见[数据库与迁移](/deploy/database)。
