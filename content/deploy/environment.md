@@ -31,8 +31,6 @@ Go 服务从仓库根目录 `.env` 加载配置，已有进程环境变量优先
 
 其他配置见 [.env.example](https://github.com/AlbaTextus/atnexus/blob/main/.env.example) 和 [配置实现](https://github.com/AlbaTextus/atnexus/blob/main/internal/config/config.go)。修改代理后端地址时，生产前端需要重新构建，以更新 rewrites。
 
-升级后可删除旧 `.env` 中的 `HTTP_ADDR`、`OAUTH_HTTP_ADDR`、`ATHUB_HTTP_ADDR`、`CREATPLAT_HTTP_ADDR`、`IMAGE_HTTP_ADDR` 和 `IMAGE_LEGACY_HTTP_ADDR`；新版不再读取这些监听变量。`NEXT_PUBLIC_WIKI_URL`、`CREATPLAT_MIGRATION_CHECK_TIMEOUT` 和 `IMAGE_LEGACY_SQLITE` 同样不再读取，可以一并删除。
-
 ## 补充变量
 
 下面这些变量同样由 Go 服务读取，默认值见 `.env.example`。时长写成 `15s`、`10m` 这样的形式；数值或时长格式错误会阻止启动，不会悄悄改用默认值。

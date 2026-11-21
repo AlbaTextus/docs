@@ -19,7 +19,7 @@ pnpm web:build
 pnpm web:start
 ```
 
-Go 服务可用 `go build -o ../release/atnexus ./cmd/server` 构建，Windows 可将输出命名为 `../release/atnexus.exe`。运行时在仓库目录提供 `.env` 或进程环境变量。已有实例升级只需应用新迁移并更新服务，不需要重复 seed。
+Go 服务可用 `go build -o ../release/atnexus ./cmd/server` 构建，Windows 可将输出命名为 `../release/atnexus.exe`。运行时在仓库目录提供 `.env` 或进程环境变量。
 
 ## Linux AMD64 发布包
 
@@ -51,16 +51,16 @@ Linux 可运行 `bash scripts/build-linux-amd64.sh`。Corepack 未安装时先�
 退出时清理临时目录。开发依赖与前端构建目录不受影响。产物位于项目的 `release/`：
 
 - `<名称>/`：静态 Go 后端、Next.js 前端、Linux AMD64 生产依赖、启动脚本、
-  四套数据库迁移与 `.env.example`。
+  四套数据库的 Prisma schema 与 `.env.example`。
 - `<名称>.tar.gz` 和 `<名称>.tar.gz.sha256`：完整发布包与校验文件。
 
 目标服务器需要 Linux AMD64、glibc 和 Node.js 20.9 或更新版本（推荐 Node.js 24），
 不适用于 Alpine/musl。构建包不附带 Node.js。前端先在构建机编译，再独立安装 Linux 的
-生产依赖，不打包 Windows 开发依赖。部署后保留已有 `.env`，
+生产依赖，不打包 Windows 开发依赖。部署时在发布目录提供 `.env`，
 执行 `chmod +x atnexus start-backend.sh start-frontend.sh`，
 分别运行 `./start-backend.sh`、`./start-frontend.sh`；
 前端默认监听 `3288`，可通过 `HOSTNAME_OVERRIDE` 和 `PORT` 调整。
-脚本不自动执行数据库迁移或 seed；迁移仍按现有部署流程执行。
+脚本不会自动建表或执行 seed，建表见[数据库](/deploy/database)。
 
 ### 发布包内容
 
@@ -69,7 +69,7 @@ Linux 可运行 `bash scripts/build-linux-amd64.sh`。Corepack 未安装时先�
 | `atnexus` | 静态编译的 Go 后端 |
 | `start-backend.sh`、`start-frontend.sh` | 后端与前端的启动脚本 |
 | `frontend/` | 已构建的 Next.js 前端及 Linux AMD64 生产依赖 |
-| `database/account`、`database/content`、`database/creator`、`database/image` | 四套数据库的 Prisma schema 与迁移 |
+| `database/account`、`database/content`、`database/creator`、`database/image` | 四套数据库的 Prisma schema |
 | `.env.example`、`README.txt`、`SHA256SUMS` | 配置样例、发布说明和逐文件校验清单 |
 
 解压后可用 `sha256sum -c SHA256SUMS` 校验文件。启动后端前在其 `.env` 中设置 `GATEWAY_HTTP_ADDR=:8010`；前端默认监听 `3288`，其启动脚本不读取后端的 `.env`。

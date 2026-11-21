@@ -1,15 +1,10 @@
 # 模块与数据库
 
-本页面向维护 atnexus 的人，说明 ATHub 模块在统一服务中的位置、鉴权方式和数据库迁移。调用接口请从[介绍与快速开始](/athub/overview)读起。
+本页面向维护 atnexus 的人，说明 ATHub 模块在统一服务中的位置、鉴权方式和数据库。调用接口请从[介绍与快速开始](/athub/overview)读起。
 
 本目录是 atnexus 统一服务内独立维护的内容模块。宿主通过 `module.go` 初始化数据库、取得
 HTTP Handler 并负责关闭连接池；模块不启动 HTTP 服务。只依赖本目录源码，不引用相邻
 ATHub 工作目录。单独修改、测试模块后，由宿主重新编译发布。
-
-来源为 `D:\AlbaTextus\athub` 的当前工作树，包括当时未提交的内容 API 精简和迁移。
-来源仓库基准提交为 `2712860b88270266ad4e241fc2a94bbee8ddc7e7`。
-这是源码合入，未建立 submodule 或 subtree 同步关系；后续源码以本目录为维护入口。
-原工作目录保留。
 
 ## 当前宿主入口
 
@@ -94,66 +89,30 @@ Key 调用先完成 Key 核对、记账和权限判断，再读取图片。
 这是进程内缓存；多实例部署与绕过 API 的数据库修改由有效期兜底。HTTP 响应仍为 `no-store`，
 不将账户保护下的内容变为公共 CDN 缓存。
 
-## 数据库与迁移
+## 数据库
 
-`ATHUB_DATABASE_URL` 专用于内容库，与宿主 `DATABASE_URL` 分开配置。
-内容库的 schema 与完整历史迁移位于仓库根目录的 `prisma/athub/`，宿主账户库的迁移位于 `prisma/oauth/`，两条迁移链相互独立。
-可连接原 ATHub 数据库，无需搬运内容数据；启动只检查连接与 schema，不自动迁移。
-内容库保存平台、作者、小说、标签库、小说标签关系、卷和章节。`athub_api_keys`、`athub_api_calls` 两张表均由
+`ATHUB_DATABASE_URL` 专用于内容库，与宿主 `DATABASE_URL` 分开配置，schema 位于仓库根目录的 `prisma/athub/`。建库与建表命令见[数据库](/deploy/database)。
+内容库保存平台、作者、小说、标签库、小说标签关系、卷、章节和插图。`athub_api_keys`、`athub_api_calls` 两张表均由
 宿主账户库维护；本模块只提供注入接口，不连接账户库、不定义用户或调用统计表。
 `athub_api_calls` 中不带个人 Key 的记录（未登录请求和网站会话请求）只作审计用途，超过
 `ATHUB_CALL_LOG_RETENTION`（默认 30 天）后由宿主的定时清理任务删除；带 Key 的记录用于用量统计，不清理。
-对应的部分索引由账户库迁移 `20261118000000_athub_call_log_purge_index` 创建，升级前执行 `npm run db:deploy`。
 
-`20261115000000_novel_illustrations` 增量创建 `Illustration` 表，通过外键关联作品，
-并按作品和图片校验值去重。已有作品默认没有插图；删除作品时关联记录一并删除。
-部署包含插图功能的服务前，先执行内容库迁移。
-
-在统一仓库根目录执行：
-
-```powershell
-npm run db:athub:install
-# Prisma 7 的工具和 prisma.config.ts 位于 modules/athub/，从统一仓库根目录读取 .env。
-npm run db:athub:validate
-npm run db:athub:deploy
-```
-
-迁移前备份数据库。其中既有 `20261103000000_remove_user_api` 迁移会删除
-`ApiUser`、`ApiKey`、`ApiUsage`，保留平台、作者、小说、卷与章节。
-
-`20261110030000_add_tags` 增量创建 `Tag` 与 `NovelTag`，已有小说默认无标签，原内容和时间不变。
 标签名称唯一，小说元信息用 `tagIds` 引用独立标签库，不重复存储标签名称。
 标签可以跨平台复用；小说列表支持 `tagId` 筛选。创建小说和批量上传的 `novel` 都可传入 `tagIds`。
 覆盖小说元信息时省略 `tagIds`、传 `null` 或 `[]` 清空引用；任一标签不存在时整个事务回滚。
 续传保留标签，标签改名保留 ID；删除仍被引用的标签返回 `409`。
-删除小说只清理标签关系，保留标签库。新版本启动前先在统一仓库根目录执行 `npm run db:athub:deploy`。
+删除小说只清理标签关系和插图记录，保留标签库。
 
 创建或覆盖小说元信息时，可以用 `authorName` 代替 `authorId`，按名称复用当前平台的作者，不存在时新增；两者不能同时传入非空值。`tagNames` 按名称复用或新增标签，并与 `tagIds` 合并去重。批量上传的 `novel` 对象也支持这些字段。名称解析与小说更新在同一事务中完成，只更换当前作品的关联，不修改共享作者、标签的名称；取消、保存失败或尚待审核时不会提前创建资料。
 
-## 验证
-
-作者姓名功能需先应用 `20261110040000_add_author_name` 内容库迁移，仅新增
-`Author.name VARCHAR(200)` 可空字段。已有作者和小说关联保留，历史姓名默认为 NULL，
-不会推测或自动填入示例姓名。前端有姓名时显示笔名，无姓名时继续显示作者编号。
-
-```powershell
-# 在统一仓库根目录执行；全部 Go 业务模块使用根 go.mod，测试排除 temp 过程脚本。
-npm run test:go
-go vet ./modules/athub/...
-```
-
-设置 `ATHUB_TEST_DATABASE_URL` 后可运行真实 PostgreSQL 集成测试；测试创建并清理临时
-schema，不在业务表中写入测试数据。未配置时这些测试跳过。
-
 ## 维护方式与凭据
 
-ATHub 保留自己的存储实现、测试和 Prisma 迁移（迁移文件位于根目录 `prisma/athub/`）；Go 依赖统一由根 `go.mod` 管理，准入层位于 `modules/athub/access/`。
+ATHub 保留自己的存储实现、测试和 Prisma schema（位于根目录 `prisma/athub/`）；Go 依赖统一由根 `go.mod` 管理，准入层位于 `modules/athub/access/`。
 维护内容功能时修改该目录，再重新构建统一程序。普通 Git 克隆即可取得全部源码，
-不需要相邻 ATHub 目录或初始化子模块。原 ATHub 工作目录保留。
+不需要相邻 ATHub 目录或初始化子模块。测试命令见[开发与目录约定](/deploy/development)。
 
 v5 的外部调用使用登录用户在 `/api/v1/account/key` 创建的个人 API Key，由 OAuth 统一管理与校验；
 站内调用使用 OAuth session Cookie，不接受原全局密钥或用 OAuth access token 替代 session。
 每个 Key 归属一个用户，创建时仅返回一次明文，账户库只保存哈希。
 账户维护模式沿用 v1 范围；内容请求不经过账户维护拦截。
-在聚合入口访问 `/api/v1/healthz` 检查账户库，账户维护状态仍返回 `433`；访问 `/api/v5/healthz` 检查内容库，不需要 Key，也不计入调用记录。
-数据库不可用返回 `503`；聚合端口绑定失败时程序退出。
+内容库的健康检查为 `/api/v5/healthz`，不需要 Key，也不计入调用记录；各模块的检查地址见[生产部署](/deploy/production)。

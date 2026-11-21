@@ -1,18 +1,14 @@
 # Docker Compose
 
-完成快速开始中的环境配置、数据库迁移和初始化后，可以由 Compose 启动完整服务：
+完成[本地快速开始](/deploy/local)中的环境配置和数据库初始化后，可以由 Compose 启动完整服务：
 
 ```bash
 docker compose up --build -d
 ```
 
-当前 [docker-compose.yml](https://github.com/AlbaTextus/atnexus/blob/main/docker-compose.yml) 是本地开发配置，固定使用本地地址和开发环境，并不自动执行迁移。Go 容器只接收 `environment` 中列出的变量：**目前未透传 `TURNSTILE_*` 和 `CUSTOM_OAUTH_AVATAR_FIELD`**，使用这些功能时需在 Compose 配置或覆盖文件中补充。只修改根目录 `.env` 不会把未列出的变量自动注入容器。
+当前 [docker-compose.yml](https://github.com/AlbaTextus/atnexus/blob/main/docker-compose.yml) 是本地开发配置，固定使用本地地址和开发环境，不会自动建表。Go 容器只接收 `environment` 中列出的变量：**目前未透传 `TURNSTILE_*` 和 `CUSTOM_OAUTH_AVATAR_FIELD`**，使用这些功能时需在 Compose 配置或覆盖文件中补充。只修改根目录 `.env` 不会把未列出的变量自动注入容器。
 
-Compose 项目与后端服务均名为 `atnexus`。数据库名称、账号及已有连接配置继续沿用；
-默认复用改名前的 `oauth_oauth-postgres`、`oauth_athub-postgres` 数据卷。
-如果旧部署使用了自定义 Compose 项目名或卷名，启动前将 `ACCOUNT_POSTGRES_VOLUME`、
-`ATHUB_POSTGRES_VOLUME` 设为实际已有卷名。升级时先停止旧 Compose 服务，再启动新服务，
-避免端口冲突；停止旧服务时保留数据卷，不使用 `down -v`。
+Compose 项目与后端服务均名为 `atnexus`。账户库和内容库的数据卷默认名为 `oauth_oauth-postgres`、`oauth_athub-postgres`，可用 `ACCOUNT_POSTGRES_VOLUME`、`ATHUB_POSTGRES_VOLUME` 指定其他卷。停止服务时不要使用 `down -v`，否则数据卷会被删除。
 
 ## 服务与端口
 
@@ -20,7 +16,7 @@ Compose 项目与后端服务均名为 `atnexus`。数据库名称、账号及�
 | --- | --- | --- | --- |
 | `postgres` | `postgres:16-alpine` | `5432` | 账户库 |
 | `athub-postgres` | `postgres:16-alpine` | `5433` | 内容库 |
-| `creatplat-postgres` | `postgres:16-alpine` | `5434`，可用 `CREATPLAT_POSTGRES_PORT` 修改 | 创作者库 |
+| `creatplat-postgres` | `postgres:16-alpine` | `5434`，可用 `CREATPLAT_POSTGRES_PORT` 修改 | 创作者库；宿主机执行 Prisma 命令时 `CREATPLAT_DATABASE_URL` 使用这个端口 |
 | `atnexus` | 根目录 `Dockerfile` | `8010` | Go 后端，五个模块共用唯一的聚合端口 |
 | `web` | `web/Dockerfile` | `3288` | Next.js 前端 |
 

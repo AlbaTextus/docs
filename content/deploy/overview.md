@@ -12,13 +12,12 @@ atnexus 是 ALBATEXTUS 的统一服务。一个 Go 程序运行五个模块，�
 
 反向代理只需一个 API 上游，见[聚合端口](/deploy/production)。
 
-image 已将原 imgbed 后端改写为 Go，元数据迁入独立 PostgreSQL，原图床前端保持原样；library 已取消；other 未指定业务，暂不启动。
-OAuth、ATHub、创作者平台和图床分别使用自己的数据库，可位于同一 PostgreSQL 实例；邮件模块使用账户库。图床保留原 `/file/` 文件地址。迁移与恢复说明见 [image 模块](/image/overview)，完整实施边界见 [重构计划](https://github.com/AlbaTextus/atnexus/blob/main/atnpan-ban.md)。
+OAuth、ATHub、创作者平台和图床分别使用自己的数据库，可位于同一 PostgreSQL 实例；邮件模块使用账户库。
 
 Go module 路径为 `github.com/AlbaTextus/atnexus`，根工作区包为 `@albatextus/atnexus`，
 账户前端包为 `@albatextus/atnexus-web`，统一程序名为 `atnexus`。
 
-后端使用 Go，前端使用 Next.js、React 和 shadcn/ui，数据存储于 PostgreSQL。Prisma 负责数据库结构与迁移，Go 运行时通过 pgx 访问数据库。
+后端使用 Go，前端使用 Next.js、React 和 shadcn/ui，数据存储于 PostgreSQL。Prisma 负责数据库结构，Go 运行时通过 pgx 访问数据库。
 
 前端位于 `web/`，默认监听 `3288`，是账户中心、小说库和创作者平台页面的入口。
 
@@ -42,9 +41,9 @@ Go module 路径为 `github.com/AlbaTextus/atnexus`，根工作区包为 `@albat
 
 1. **准备环境**：Go 1.26.1+、Node.js 24+、pnpm 和 PostgreSQL。见[本地快速开始](/deploy/local)。
 2. **配置**：在仓库根目录的 `.env` 中填写数据库连接、对外地址和加密密钥。见[环境变量](/deploy/environment)。
-3. **建库并迁移**：账户、内容、创作者、图床四套数据库分别迁移；程序启动时不会自动建表。见[数据库与迁移](/deploy/database)。
+3. **建库建表**：账户、内容、创作者、图床四套数据库分别建表；程序启动时不会自动建表。见[数据库](/deploy/database)。
 4. **构建**：本地直接构建，或生成 Linux AMD64 发布包。见[构建与发布](/deploy/build)；容器方式见 [Docker Compose](/deploy/docker)。
 5. **启动并检查**：启动后端与前端，确认各模块的健康检查均返回 200，地址见[健康检查](/deploy/production)。
-6. **接入正式入口**：HTTPS、反向代理、Cookie 与备份要求见[生产部署与升级](/deploy/production)。
+6. **接入正式入口**：HTTPS、反向代理、Cookie 与备份要求见[生产部署](/deploy/production)。
 
 各模块自身的说明见 [ATHub](/athub/module)、[OAuth](/oauth/overview)、[邮件](/mail/overview)、[图床](/image/overview)和[创作者平台](/creatplat/overview)。

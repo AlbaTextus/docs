@@ -1,6 +1,6 @@
 # ALBATEXTUS 文档站
 
-独立 Next.js 16 App Router 文档站，按模块划分为 ATHub、OAuth、图床、创作者平台和部署五组文档，侧栏顶部的下拉菜单在它们之间切换。atnexus 仓库的 README 不再维护，模块说明与部署说明统一写在本项目的 `content/` 中。
+独立 Next.js 16 App Router 文档站，按模块划分为 ATHub、OAuth、邮件、图床、创作者平台和部署六组文档，侧栏顶部的下拉菜单在它们之间切换。atnexus 仓库的 README 不再维护，模块说明与部署说明统一写在本项目的 `content/` 中。
 
 ATHub 的接口内容读取 `content/athub/API.md`，覆盖全部 26 个 API 操作（含全书目录 `/toc` 与插图）；其余页面各对应 `content/<模块>/` 下的一个 Markdown 文件。
 
@@ -10,6 +10,7 @@ ATHub 的接口内容读取 `content/athub/API.md`，覆盖全部 26 个 API 操
 | --- | --- | --- |
 | ATHub | `/athub/<页面>` | `content/athub/` |
 | OAuth | `/oauth/<页面>` | `content/oauth/` |
+| 邮件 | `/mail/<页面>` | `content/mail/` |
 | 图床 | `/image/<页面>` | `content/image/` |
 | 创作者平台 | `/creatplat/<页面>` | `content/creatplat/` |
 | 部署 | `/deploy/<页面>` | `content/deploy/` |

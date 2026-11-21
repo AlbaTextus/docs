@@ -9,7 +9,7 @@ modules/oauth/        账户、session、OAuth、外部 Key、Passkey 与第三�
 modules/image/        图床上传、文件管理与本地/S3 存储
 modules/creatplat/    投稿、审核、历史与修订
 modules/athub/        正式内容、准入适配及内容库的 Prisma 工具配置
-prisma/               四套数据库的 schema 与完整历史迁移：oauth/、athub/、creatplat/、image/
+prisma/               四套数据库的 Prisma schema：oauth/、athub/、creatplat/、image/
 web/app/              Next.js 页面与全局样式
 web/components/       按业务域分组的组件，见「前端目录与命名规范」
 web/lib/              前端 API 与按业务域分组的逻辑
@@ -22,20 +22,20 @@ release/              本地构建与发布产物
 | --- | --- |
 | `npm run server:dev` | 一个进程运行 OAuth、图床、邮件、创作者平台和 ATHub，只监听聚合端口 `8010` |
 | `npm run test:go` | 运行正式 Go 代码及所有业务模块测试，排除 temp 中的过程脚本 |
-| `npm run db:athub:deploy` | 应用内容库迁移 |
-| `npm run db:creatplat:deploy` | 应用创作者独立库迁移 |
-| `npm run db:image:deploy` | 应用图床独立库迁移 |
+| `npm run db:athub:deploy` | 建立内容库表结构 |
+| `npm run db:creatplat:deploy` | 建立创作者库表结构 |
+| `npm run db:image:deploy` | 建立图床库表结构 |
 | `pnpm web:dev` | 前端开发服务 |
 | `pnpm web:typecheck` | TypeScript 类型检查 |
 | `pnpm db:validate` | 校验账户库的 Prisma schema |
 | `pnpm db:format` | 格式化账户库的 Prisma schema |
-| `pnpm db:migrate` | 在开发用账户库创建、应用迁移 |
-| `pnpm db:deploy` | 应用账户库已提交的迁移 |
+| `pnpm db:migrate` | 修改账户库 schema 后，在开发库生成并应用结构变更 |
+| `pnpm db:deploy` | 建立账户库表结构 |
 | `pnpm db:studio` | 打开账户库的管理界面 |
 
-Prisma schema 与迁移是数据库结构的来源；Go 服务没有 Prisma Client，也不会在启动时自动建表。首次检查前端或更换构建目录时，先完成一次前端构建，生成 Next.js 路由类型。
+Prisma schema 是数据库结构的来源；Go 服务没有 Prisma Client，也不会在启动时自动建表，四套数据库的说明见[数据库](/deploy/database)。首次检查前端或更换构建目录时，先完成一次前端构建，生成 Next.js 路由类型。
 
-相邻的 Status 后台可通过 `go run ./cmd/register-status` 接入当前 OAuth。工具创建独立机密应用 `albatextus-status`，最低角色为 `ADMIN`，仅申请 `profile`；默认回调为 `http://127.0.0.1:3100/api/auth/callback`，凭据写入 `../status/.dev.vars`。应用所有者使用 `SEED_ADMIN_EMAIL` 对应的现有管理员，也可在首次登记时用 `-admin-id <UUID>` 指定。Status 默认按服务端用户资料中的 `role` 允许 `ADMIN`、`SUPER_ADMIN`，符合条件的其他账号也能登录；OAuth 应用更严格的 `SUPER_ADMIN` 最低角色会保留。支持 `-app-url`、`-issuer-url`、`-output`；重复运行保留已有密钥、回调、Status 管理密钥和自定义允许名单。旧版仅允许所有者 UUID 的配置，可运行 `go run ./cmd/register-status -migrate-owner-allowlist` 切换到角色授权；该选项拒绝自动清理自定义账号名单。登记后在 Status 执行 `npm run db:migrate:local` 并重启开发服务。工具不会重置用户、运行 seed 或修改其他应用。
+相邻的 Status 后台可通过 `go run ./cmd/register-status` 接入当前 OAuth。工具创建独立机密应用 `albatextus-status`，最低角色为 `ADMIN`，仅申请 `profile`；默认回调为 `http://127.0.0.1:3100/api/auth/callback`，凭据写入 `../status/.dev.vars`。应用所有者使用 `SEED_ADMIN_EMAIL` 对应的现有管理员，也可在首次登记时用 `-admin-id <UUID>` 指定。Status 默认按服务端用户资料中的 `role` 允许 `ADMIN`、`SUPER_ADMIN`，符合条件的其他账号也能登录；OAuth 应用更严格的 `SUPER_ADMIN` 最低角色会保留。支持 `-app-url`、`-issuer-url`、`-output`；重复运行保留已有密钥、回调、Status 管理密钥和自定义允许名单。登记后在 Status 执行 `npm run db:migrate:local` 并重启开发服务。工具不会重置用户、运行 seed 或修改其他应用。
 
 目前未提供 OIDC ID Token 或跨子系统统一登出。功能问题和接入反馈可提交到 [GitHub Issues](https://github.com/AlbaTextus/atnexus/issues)。
 
@@ -65,12 +65,12 @@ hooks/                    跨域复用的 React hooks
 
 ## UI 与字体维护
 
-Web 的组件、主题、字体与页面展示样式在 atnexus 项目内独立维护，不再依赖 `@albatextus/ui` 包或相邻的 ATUI 仓库。迁移使用此前实际安装的组件版本，保留现有外观与交互；独立 ATUI 项目不受影响。基础组件实现位于 `web/components/ui/`，其他展示组件位于 `web/components/`，带业务反馈或路由适配的组件继续包装 `web/components/presentation/` 中的本地实现。
+Web 的组件、主题、字体与页面展示样式在 atnexus 项目内独立维护，不依赖 `@albatextus/ui` 包或相邻的 ATUI 仓库。基础组件实现位于 `web/components/ui/`，其他展示组件位于 `web/components/`，带业务反馈或路由适配的组件继续包装 `web/components/presentation/` 中的本地实现。
 
-应用与用户管理使用共享 `StatCard`；列表使用 `EmptyState`；删除通行密钥、解绑账号、删除应用及重置密钥使用 `ConfirmDialog`。这些组合归在原有 card / empty / dialog 组件组中，不再在页面内重复维护骨架。请求、统计和名称二次确认仍在账户模块，密钥按需读取与隐藏清除的逻辑保持不变。
+应用与用户管理使用共享 `StatCard`；列表使用 `EmptyState`；删除通行密钥、解绑账号、删除应用及重置密钥使用 `ConfirmDialog`。这些组合归在 card / empty / dialog 组件组中，不在页面内重复维护骨架。请求、统计和名称二次确认仍在账户模块，密钥按需读取与隐藏清除的逻辑保持不变。
 
 PasswordInput 与 CopyField 的静态密钥显隐共用本地 InputGroupPassword；ClientSecretField 继续独立负责按需读取及隐藏时清除服务端密钥，不将其改为预加载静态字段。底层 Base UI、动画和 Markdown 等依赖直接在 `web/package.json` 中声明。
 
 首页授权示例使用 `web/components/shared/code-highlighted/` 中的 `CodeHighlighted`，保留深色终端外观，只为该示例加载 HTTP 语法，不在全局初始化高亮引擎。个人简介及编辑预览中的 Markdown 代码块继续按需高亮，沿用全站明暗主题、中文复制反馈和纯文本回退。
 
-`web/app/globals.css` 引入本地 `web/styles/index.css`，主题 token、页面样式与字体声明均保留在 `web/styles/`。字体文件和 OFL 许可证位于 `web/fonts/`，构建时自动生成静态资源地址，不依赖外部字体服务。修改后运行 `pnpm web:typecheck` 和 `pnpm web:build`；依赖更新时同步锁文件，部署使用 `pnpm install --frozen-lockfile`。Docker 构建只需 atnexus 自身目录，不再需要额外 UI 构建上下文。
+`web/app/globals.css` 引入本地 `web/styles/index.css`，主题 token、页面样式与字体声明均保留在 `web/styles/`。字体文件和 OFL 许可证位于 `web/fonts/`，构建时自动生成静态资源地址，不依赖外部字体服务。修改后运行 `pnpm web:typecheck` 和 `pnpm web:build`；依赖更新时同步锁文件，部署使用 `pnpm install --frozen-lockfile`。Docker 构建只需 atnexus 自身目录。

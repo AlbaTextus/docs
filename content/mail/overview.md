@@ -8,7 +8,7 @@
 
 邮件模块不单独建库，也不保存另一份账户规则：
 
-- 验证码、发信限速和账户邮箱都保存在账户库，沿用原有迁移链。
+- 验证码、发信限速和账户邮箱都保存在账户库。
 - 登录态使用同一个 session Cookie；账号中心接口同样要求账号中心请求头。
 - 注册开关、Turnstile 人机验证和维护模式由 OAuth 模块判定，本模块直接沿用其结果，见[站点开关与维护](/oauth/site)。维护期间只有超级管理员可以调用 `/api/v3` 的业务接口，健康检查不受影响。
 
@@ -28,7 +28,7 @@ SMTP_PASS=your-smtp-auth-code
 
 `SMTP_FROM` 留空默认使用 `SMTP_USER`。QQ 邮箱需先开启 SMTP，并填写授权码。端口 587 强制 STARTTLS，465 默认使用 TLS；也可以用 `SMTP_SECURE` 显式指定直接 TLS，服务端始终验证证书。发送超时为 10 秒。配置不完整会阻止启动；全部留空时暂停邮箱注册和验证，已有账户登录及第三方登录不受影响。
 
-上线前执行 `pnpm db:deploy` 应用邮箱验证迁移，再重启后端。存量账户默认标记为未验证，可在账户安全页面补验；已有密码登录继续可用。第三方新建账户只有上游明确证明邮箱已验证时才继承验证状态，LINUX DO 的专属登录标识不视为邮箱。
+尚未验证邮箱的账户可在账户安全页面补验，密码登录不受影响。第三方新建账户只有上游明确证明邮箱已验证时才继承验证状态，LINUX DO 的专属登录标识不视为邮箱。
 
 ## 验证码规则
 
@@ -58,14 +58,4 @@ SMTP_PASS=your-smtp-auth-code
 
 常见错误码：`email_unavailable`（503，未配置 SMTP 或发送失败）、`invalid_email`（400）、`invalid_email_code`（400）、`email_rate_limited`（429，带 `Retry-After: 60`）、`email_exists`（409）、`account_changed`（409）、`registration_disabled`（403）。
 
-## 从 `/api/v1` 迁移
-
-验证码接口原先位于 OAuth 模块，现已下线，旧路径返回 404：
-
-| 旧路径 | 新路径 |
-| --- | --- |
-| `POST /api/v1/auth/email/code` | `POST /api/v3/auth/email/code` |
-| `POST /api/v1/account/email/code` | `POST /api/v3/account/email/code` |
-| `POST /api/v1/account/email` | `POST /api/v3/account/email` |
-
-请求与响应字段不变。升级时后端与前端需要一起更新：新前端调用 `/api/v3`，旧后端没有这些路径。Next.js 把 `/api/v3/*` 转发到 `OAUTH_BACKEND_URL`；反向代理若按路径放行，需要加入 `/api/v3`，见[聚合端口](/deploy/production)。本次改动没有数据库迁移，也没有新的环境变量。
+Next.js 把 `/api/v3/*` 转发到 `OAUTH_BACKEND_URL`；反向代理按路径放行时需要加入 `/api/v3`，见[生产部署](/deploy/production)。

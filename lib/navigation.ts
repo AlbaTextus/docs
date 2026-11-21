@@ -13,7 +13,7 @@ export type Endpoint = {
   status: string
 }
 
-export type ServiceId = "athub" | "oauth" | "image" | "creatplat" | "deploy"
+export type ServiceId = "athub" | "oauth" | "mail" | "image" | "creatplat" | "deploy"
 export type PageIcon = "book" | "key" | "layers" | "question" | "code" | "checklist" | "server" | "layout" | "plug"
   | "fingerprint" | "mail" | "wrench" | "braces" | "settings" | "drive" | "lifebuoy" | "review" | "database"
   | "network" | "terminal" | "variable" | "container" | "package" | "globe" | "folders"
@@ -77,7 +77,7 @@ export const services: Service[] = [
         { slug: "novel-import", title: "小说拆解与上传规范", description: "把 TXT、EPUB 整理为元信息、卷和章节，并通过 API 导入。", icon: "checklist", file: "athub/NOVEL_IMPORT.md" },
       ] },
       { label: "模块维护", pages: [
-        { slug: "module", title: "模块与数据库", description: "ATHub 在统一服务中的入口、鉴权方式、读缓存与内容库迁移。", icon: "server", file: "athub/module.md" },
+        { slug: "module", title: "模块与数据库", description: "ATHub 在统一服务中的入口、鉴权方式、读缓存与内容库。", icon: "server", file: "athub/module.md" },
         { slug: "library-web", title: "小说库前端", description: "小说库页面的入口、数据来源与缓存方式。", icon: "layout", file: "athub/library-web.md" },
       ] },
     ],
@@ -91,12 +91,19 @@ export const services: Service[] = [
       ] },
       { label: "账户", pages: [
         { slug: "login", title: "登录与账户", description: "登录流程、第三方登录、头像、Turnstile、页面与账户等级。", icon: "fingerprint", file: "oauth/login.md" },
-        { slug: "email", title: "邮箱认证", description: "SMTP 配置、验证码规则与邮箱绑定接口。", icon: "mail", file: "oauth/email.md" },
         { slug: "athub-key", title: "ATHub 密钥与权限", description: "个人 Key、调用记录、管理员禁用与等级权限。", icon: "key", file: "oauth/athub-key.md" },
       ] },
       { label: "管理与参考", pages: [
-        { slug: "site", title: "站点开关与维护", description: "功能开关、维护模式与消息功能下线迁移。", icon: "wrench", file: "oauth/site.md" },
+        { slug: "site", title: "站点开关与维护", description: "功能开关与维护模式。", icon: "wrench", file: "oauth/site.md" },
         { slug: "api", title: "接口一览", description: "OAuth、认证、个人账户与管理接口的路径表。", icon: "braces", file: "oauth/api.md" },
+      ] },
+    ],
+  },
+  {
+    id: "mail", name: "邮件", ...atnexus, endpoints: [],
+    sections: [
+      { label: "开始使用", pages: [
+        { slug: "overview", title: "模块概览", description: "SMTP 配置、验证码规则与 /api/v3 邮箱接口。", icon: "mail", file: "mail/overview.md" },
       ] },
     ],
   },
@@ -108,7 +115,6 @@ export const services: Service[] = [
         { slug: "config", title: "配置", description: "图床的环境变量与默认值。", icon: "settings", file: "image/config.md" },
       ] },
       { label: "运维", pages: [
-        { slug: "migration", title: "迁移与升级", description: "从原 SQLite 图床迁移到独立 PostgreSQL 的步骤。", icon: "drive", file: "image/migration.md" },
         { slug: "recovery", title: "兼容边界与失败恢复", description: "不再兼容的旧入口，以及上传、删除、移动失败后的处理。", icon: "lifebuoy", file: "image/recovery.md" },
       ] },
     ],
@@ -122,7 +128,7 @@ export const services: Service[] = [
       ] },
       { label: "参考", pages: [
         { slug: "api", title: "接口一览", description: "创作者平台 /api/v4 的接口、鉴权与请求约定。", icon: "braces", file: "creatplat/api.md" },
-        { slug: "database", title: "独立数据库", description: "创作者库的数据归属、建库、旧数据迁移与回退限制。", icon: "database", file: "creatplat/database.md" },
+        { slug: "database", title: "独立数据库", description: "创作者库的数据归属，以及审核和历史的一致性。", icon: "database", file: "creatplat/database.md" },
       ] },
     ],
   },
@@ -135,12 +141,12 @@ export const services: Service[] = [
       ] },
       { label: "配置", pages: [
         { slug: "environment", title: "环境变量", description: "Go 服务与前端使用的环境变量。", icon: "variable", file: "deploy/environment.md" },
-        { slug: "database", title: "数据库与迁移", description: "四套数据库的建立、迁移命令与升级步骤。", icon: "database", file: "deploy/database.md" },
+        { slug: "database", title: "数据库", description: "四套数据库的建库与建表命令。", icon: "database", file: "deploy/database.md" },
       ] },
       { label: "发布", pages: [
         { slug: "docker", title: "Docker Compose", description: "用 Compose 启动数据库、后端与前端。", icon: "container", file: "deploy/docker.md" },
         { slug: "build", title: "构建与发布", description: "本地构建，以及生成 Linux AMD64 发布包。", icon: "package", file: "deploy/build.md" },
-        { slug: "production", title: "生产部署与升级", description: "入口与域名、健康检查、密钥备份和升级清单。", icon: "globe", file: "deploy/production.md" },
+        { slug: "production", title: "生产部署", description: "入口与域名、健康检查、密钥备份与多实例。", icon: "globe", file: "deploy/production.md" },
       ] },
       { label: "开发", pages: [
         { slug: "development", title: "开发与目录约定", description: "目录结构、常用命令、前端命名规范与 UI 维护。", icon: "folders", file: "deploy/development.md" },

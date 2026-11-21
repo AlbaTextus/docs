@@ -6,7 +6,7 @@ import {
 import type { PageIcon, ServiceId } from "@/lib/navigation"
 
 export const serviceIcons: Record<ServiceId, LucideIcon> = {
-  athub: Database, oauth: ShieldCheck, image: ImageIcon, creatplat: PenLine, deploy: Rocket,
+  athub: Database, oauth: ShieldCheck, mail: Mail, image: ImageIcon, creatplat: PenLine, deploy: Rocket,
 }
 
 export const pageIcons: Record<PageIcon, LucideIcon> = {

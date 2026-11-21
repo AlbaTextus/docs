@@ -44,7 +44,7 @@
 | GET / DELETE | `/api/v1/passkeys` / `/api/v1/passkeys/{id}` | 列出或删除通行密钥 |
 | GET / POST | `/api/v1/oauth/consent` | 读取与提交应用授权确认 |
 
-账户管理接口使用中心登录会话。第三方登录发起、账户修改、应用授权决定等请求需携带 `X-AlbaTextus-Client: account-center`；Passkey 完成接口使用 `X-WebAuthn-Ceremony`。开启 Turnstile 后，注册与登录发起还需有效的 `X-Turnstile-Token`。
+账户管理接口使用中心登录会话。第三方登录发起、账户修改、应用授权决定等请求需携带 `X-AlbaTextus-Client: account-center`；Passkey 完成接口使用 `X-WebAuthn-Ceremony`。开启 Turnstile 后，注册相关请求与密码登录还需有效的 `X-Turnstile-Token`；第三方登录和 Passkey 登录不需要该令牌。
 
 ## 管理接口
 

@@ -207,24 +207,24 @@
 - 整部作品的删除表现为作品资料及其全部分卷、章节、插图和布局各一项 `DELETE`。
 - 作者、标签的改名不属于某一部作品的改动，不在这里列出。
 - `after` 是提交时预演得到的值，用于展示，不保证与通过后写入的逐项相同。这项提交自己新建的作者、标签或分卷在预演结束后并不存在，`after` 里指向它们的 `authorId`、`tagIds`、`volumeId` 是预演时分配的 ID，通过后实际的 ID 与它不同，显示作者和标签时应使用随附的名称。删除插图连带的布局改动，`after.blocks` 按提交时的布局算出，通过时移除的是届时布局里这张图的布局块。
-- 较早版本排队的提交没有记下改动后的值：它们的 `UPDATE`、`INSERT` 项没有 `after`，只给出 `entity`、`action` 以及 `UPDATE` 的 `id` 和 `fields`。
+- 提交时没有记下改动后的值的，`UPDATE`、`INSERT` 项没有 `after`，只给出 `entity`、`action` 以及 `UPDATE` 的 `id` 和 `fields`。
 
-作品不存在、没有改动它的待审核提交，或只有升级前排队、没有记下改动的提交时，返回 `{"items":[],"total":0}`。
+作品不存在，或没有改动它的待审核提交时，返回 `{"items":[],"total":0}`。
 
 某项待审核提交记下的改动无法读取（格式版本不认识或已损坏）时，整个请求返回 `500 server_error`，不会只返回其余几项。创作者库或内容库没有接入时返回 `503 reviews_unavailable`；暂时无法核对权限或读取审核记录时返回 `503 permissions_unavailable`。
 
 ## 用个人 Key 上传
 
-封面上传和插图上传除了网站登录会话，还接受 ATHub 个人 Key，供服务端程序或采集脚本直接上传图片文件。请求格式、图片限制和成功响应与上面两节相同，凭据改为 `Authorization: Bearer <api_key>`。下面以本地聚合端口 `8010` 为例：
+封面上传和插图上传除了网站登录会话，还接受 ATHub 个人 Key，供服务端程序或采集脚本直接上传图片文件。请求格式、图片限制和成功响应与上面两节相同，凭据改为 `Authorization: Bearer <api_key>`。示例中的 `API_BASE_URL` 是聚合入口的对外地址：
 
 ```bash
-curl --request POST 'http://127.0.0.1:8010/api/v4/account/athub/cover' \
+curl --request POST "$API_BASE_URL/api/v4/account/athub/cover" \
   --header "Authorization: Bearer $ATHUB_API_TOKEN" \
   --form 'file=@cover.jpg'
 ```
 
 ```bash
-curl --request POST 'http://127.0.0.1:8010/api/v4/account/athub/novels/10/illustrations' \
+curl --request POST "$API_BASE_URL/api/v4/account/athub/novels/10/illustrations" \
   --header "Authorization: Bearer $ATHUB_API_TOKEN" \
   --form 'file=@illustration.jpg'
 ```
@@ -237,4 +237,4 @@ curl --request POST 'http://127.0.0.1:8010/api/v4/account/athub/novels/10/illust
 - 调用写入 ATHub 调用记录并计入 Key 的累计次数。界面按 `/api/v4` 路径展示。Key 通过核对后才发现的问题（如作品 ID 无效、图片不合格、图床保存失败）同样计一次调用。
 - 封面按「上传 / 新建 · 封面」判断，不进入审核。插图沿用「上传 / 新建 · 插图」的权限、审核和贡献历史。
 
-`/api/v4` 由创作者平台提供，可以直接访问聚合端口 `8010`，也可经账户前端的 `/api/v4/*` 转发到达。若 API 域名按路径放行，需允许 `/api/v4`，见[生产部署与升级](/deploy/production)。接口面向服务端程序：请求带有不在允许列表中的 `Origin` 时返回 `403 invalid_origin`。
+`/api/v4` 由创作者平台提供，可以直接访问聚合端口 `8010`，也可经账户前端的 `/api/v4/*` 转发到达。若 API 域名按路径放行，需允许 `/api/v4`，见[生产部署](/deploy/production)。接口面向服务端程序：请求带有不在允许列表中的 `Origin` 时返回 `403 invalid_origin`。

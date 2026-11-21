@@ -4,7 +4,7 @@
 | --- | --- |
 | `IMAGE_DATABASE_URL` | 必填，独立 PostgreSQL 数据库 |
 | `GATEWAY_HTTP_ADDR` | 图床与其他模块共用的后端监听地址，默认 `:8010` |
-| `IMAGE_PUBLIC_URL` | 公开根地址，本地默认 `http://localhost:8010` |
+| `IMAGE_PUBLIC_URL` | 公开根地址 |
 | `IMAGE_LOCAL_ROOT` | 必填，已有本地对象目录，不存在时拒绝启动 |
 | `IMAGE_TEMP_ROOT` | 上传和分块临时文件，默认 `temp/image` |
 | `IMAGE_MAX_UPLOAD_BYTES` | 默认 512 MiB |
@@ -15,8 +15,6 @@
 | `IMAGE_MAX_UPLOAD_SESSIONS` | 单个账户或 Key 可同时保留的未完成分块上传数，默认 20，必须为正 |
 | `IMAGE_DATABASE_MAX_CONNS` | 图床库连接池大小；默认 `0`，表示沿用连接地址中的 `pool_max_conns`，未指定时为 10 |
 
-OAuth 头像、背投和创作者封面/插图由后端在同一进程内直接保存到图床，不经 HTTP 和上传 Key。保存后的地址以 `IMAGE_PUBLIC_URL` 为根，生产环境须把它设为浏览器可访问的 HTTPS 地址。`IMGBED_URL`、`IMGBED_API_TOKEN` 已取消，随导入工具退役的 `IMAGE_LEGACY_SQLITE` 也不再读取，旧 `.env` 中的这几项可以删除。
+OAuth 头像、背投和创作者封面/插图由后端在同一进程内直接保存到图床，不经 HTTP 和上传 Key。保存后的地址以 `IMAGE_PUBLIC_URL` 为根，生产环境须把它设为浏览器可访问的 HTTPS 地址。
 
-后端不再监听独立图床端口或旧文件端口。如果要继续支持原来的公开图片 URL，将原入口的 `/file/` 反代到聚合端口，保留原路径和查询参数。
-
-Docker Compose 另外使用 `IMAGE_COMPOSE_DATABASE_URL` 和 `IMAGE_COMPOSE_LOCAL_ROOT`，见 [Docker Compose](/deploy/docker)。
+各变量在本地与生产环境的取值见[环境变量](/deploy/environment)。Docker Compose 另外使用 `IMAGE_COMPOSE_DATABASE_URL` 和 `IMAGE_COMPOSE_LOCAL_ROOT`，见 [Docker Compose](/deploy/docker)。

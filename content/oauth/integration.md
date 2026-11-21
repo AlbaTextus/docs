@@ -18,10 +18,10 @@
 5. 应用验证 `state`，用授权码和原始 `code_verifier` 换取令牌。
 6. 应用携带访问令牌请求用户信息，以稳定的 `id` / `sub` 建立本地会话。
 
-授权请求示意（各参数均需正确 URL 编码）：
+下面的示例用 `ISSUER_URL` 表示账户中心的对外地址。授权请求示意（各参数均需正确 URL 编码）：
 
 ```text
-http://localhost:3288/oauth/authorize
+{ISSUER_URL}/oauth/authorize
   ?response_type=code
   &client_id=YOUR_CLIENT_ID
   &redirect_uri=YOUR_REGISTERED_CALLBACK
@@ -34,14 +34,14 @@ http://localhost:3288/oauth/authorize
 以下是服务端客户端的 Bash / curl 示例，将占位值替换为应用实际值：
 
 ```bash
-curl http://localhost:3288/oauth/token \
+curl "$ISSUER_URL/oauth/token" \
   --user 'YOUR_CLIENT_ID:YOUR_CLIENT_SECRET' \
   --data-urlencode 'grant_type=authorization_code' \
   --data-urlencode 'code=AUTHORIZATION_CODE' \
   --data-urlencode 'redirect_uri=YOUR_REGISTERED_CALLBACK' \
   --data-urlencode 'code_verifier=YOUR_ORIGINAL_VERIFIER'
 
-curl http://localhost:3288/api/v1/user \
+curl "$ISSUER_URL/api/v1/user" \
   --header 'Authorization: Bearer YOUR_ACCESS_TOKEN'
 ```
 
@@ -52,7 +52,7 @@ curl http://localhost:3288/api/v1/user \
 ## 刷新、撤销与自省
 
 ```bash
-curl http://localhost:3288/oauth/token \
+curl "$ISSUER_URL/oauth/token" \
   --user 'YOUR_CLIENT_ID:YOUR_CLIENT_SECRET' \
   --data-urlencode 'grant_type=refresh_token' \
   --data-urlencode 'refresh_token=YOUR_REFRESH_TOKEN'

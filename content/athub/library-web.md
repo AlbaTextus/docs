@@ -17,12 +17,15 @@
 作品详情沿用原图标页签，增加章节目录入口。目录仅使用 `/api/v5/toc` 返回的标题，
 按“作品 → 卷 → 章节”展开和收起，卷与章节分别按 `order` 排序。
 未分卷章节不会丢失：有卷时归入“未分卷”，整本无卷时直接列在作品下。
-章节标题为普通文字，不提供阅读跳转，不请求 `/api/v5/content` 或显示正文。
+作品详情与目录提供阅读入口，跳转到 `/library/books/{id}/read/{volumeId}/{chapterId}`（未分卷章节的 `volumeId` 使用 `0`）。
+阅读页通过 `/api/v5/toc` 定位章节序号 `order` 与所属卷后，按需请求 `/api/v5/content?novelId=...&order=...` 读取纯文本正文，
+支持目录侧栏、本章/目录搜索、上下章切换、滚动与分页阅读模式以及主题、字体、字号、行距、版心宽度等本地设置；
+阅读排版设置与本地最近阅读进度仅保存在 `localStorage`，章节正文不写入 `sessionStorage` 持久缓存。
 小说库自动使用 OAuth session Cookie。`GET /api/v1/session` 只返回到期时间和缓存隔离标识，
 浏览器不再申请 ATHub 专用短时 bearer 凭证。读取正式内容直连
 `NEXT_PUBLIC_ATHUB_API_URL` 的 `/api/v5/*`，读取历史和贡献者直连
 `NEXT_PUBLIC_CREATPLAT_API_URL` 的 `/api/v4/history` 与 `/api/v4/contributors`。
-两个公开地址都必须与账户入口共享同一 Cookie 主机范围，本地统一使用 localhost。
+两个公开地址都必须与账户入口共享同一 Cookie 主机范围。
 聚合入口下的各模块校验 OAuth session 与账户状态，再执行各自的权限规则。退出或账户禁用后拒绝后续访问。
 网站请求不生成个人 Key，不计入外部 Key 的调用额度；外部 Key 的生命周期与校验归 OAuth。
 
